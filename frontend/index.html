@@ -4,34 +4,68 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Lab Dashboard</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      background: #0f1117;
-      color: #e2e8f0;
-    }
-    main {
-      text-align: center;
-    }
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-    }
-    p {
-      color: #94a3b8;
-      font-size: 0.95rem;
-    }
-  </style>
+  <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-  <main>
+  <header class="page-header">
     <h1>AI Lab Dashboard</h1>
-    <p>Server is running. Phase 1 scaffolding complete.</p>
+    <p>Provider health checks</p>
+  </header>
+
+  <main>
+    <section class="grid" id="providers">
+      <article class="card" data-provider="openai">
+        <h2>OpenAI</h2>
+        <div class="indicators">
+          <span class="status" data-role="status"></span>
+          <span class="latency" data-role="latency"></span>
+        </div>
+        <p class="error" data-role="error"></p>
+        <button type="button" data-role="check">Check</button>
+      </article>
+
+      <article class="card" data-provider="anthropic">
+        <h2>Anthropic</h2>
+        <div class="indicators">
+          <span class="status" data-role="status"></span>
+          <span class="latency" data-role="latency"></span>
+        </div>
+        <p class="error" data-role="error"></p>
+        <button type="button" data-role="check">Check</button>
+      </article>
+
+      <article class="card" data-provider="gemini">
+        <h2>Gemini</h2>
+        <div class="indicators">
+          <span class="status" data-role="status"></span>
+          <span class="latency" data-role="latency"></span>
+        </div>
+        <p class="error" data-role="error"></p>
+        <button type="button" data-role="check">Check</button>
+      </article>
+
+      <article class="card" data-provider="openrouter">
+        <h2>OpenRouter</h2>
+        <div class="indicators">
+          <span class="status" data-role="status"></span>
+          <span class="latency" data-role="latency"></span>
+        </div>
+        <p class="error" data-role="error"></p>
+        <button type="button" data-role="check">Check</button>
+      </article>
+
+      <article class="card" data-provider="tavily">
+        <h2>Tavily</h2>
+        <div class="indicators">
+          <span class="status" data-role="status"></span>
+          <span class="latency" data-role="latency"></span>
+        </div>
+        <p class="error" data-role="error"></p>
+        <button type="button" data-role="check">Check</button>
+      </article>
+    </section>
   </main>
+
+  <script src="/static/app.js"></script>
 </body>
 </html>

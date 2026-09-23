@@ -10,10 +10,17 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+
+from .routers import health
 
 app = FastAPI(title="AI Lab Dashboard")
 
+app.include_router(health.router)
+
 _FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+
+app.mount("/static", StaticFiles(directory=str(_FRONTEND_DIR)), name="static")
 
 
 @app.get("/", response_class=HTMLResponse)

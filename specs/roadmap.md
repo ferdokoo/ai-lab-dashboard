@@ -10,7 +10,7 @@ _Goal:_ Prove the full loop works end-to-end so every subsequent phase has a rel
 - One placeholder provider module to validate the interface shape
 - `uvicorn backend.main:app` starts with no errors
 
-## Phase 2 — Health Checks
+## Phase 2 — Health Checks ✓ _complete_
 _Goal:_ Tell you instantly which keys are valid and which endpoints are reachable.
 - `backend/providers/base.py` — abstract interface: `health()`, `models()`, `balance()`, `request()`
 - Provider modules: `openai.py`, `anthropic.py`, `gemini.py`, `openrouter.py`, `tavily.py`
