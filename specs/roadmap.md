@@ -1,6 +1,6 @@
 # Roadmap: Local AI Lab Dashboard
 
-## Phase 1 — Scaffolding
+## Phase 1 — Scaffolding ✓ _complete_
 _Goal:_ Prove the full loop works end-to-end so every subsequent phase has a reliable foundation to build on.
 - Repo layout: `backend/`, `frontend/`, `specs/`
 - Python venv + `requirements.txt`
