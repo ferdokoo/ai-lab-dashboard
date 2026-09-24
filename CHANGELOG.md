@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-24
+- Implement model catalog feature: add SQLite caching, provider routes, and frontend integration for model listings and pricing (c058969)
+- Refine model catalog specifications: remove static pricing tables, implement provider-supplied pricing, and enhance frontend with provider dropdown and collapsible table (e07c2fd)
+- Add model catalog specifications, requirements, and validation criteria (ffef380)
+
 ## 2026-09-23
 - Implement Phase 2: Health Checks with provider modules and frontend integration (05f0a32)
 - Phase 1: Implement initial scaffolding for AI Lab Dashboard, including environment setup, backend configuration, FastAPI app, and placeholder provider. Add frontend HTML and update roadmap to reflect completion of Phase 1. (d4424c0)
