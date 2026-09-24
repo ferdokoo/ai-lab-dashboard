@@ -33,3 +33,11 @@ class PlaceholderProvider:
     ) -> dict[str, Any]:
         """Send a prompt and return response text plus usage metrics."""
         raise NotImplementedError
+
+    def search(
+        self,
+        query: str,
+        options: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Run a search query and return result text (token metrics None)."""
+        raise NotImplementedError

@@ -7,6 +7,7 @@
 - [ ] Each successful call writes one row to the SQLite `requests` table with correct provider, model, token counts, cost, and latency.
 - [ ] Request log stores no prompt/response bodies by default.
 - [ ] Frontend Requests page lets the user pick a provider, pick a model from the (cached, refreshable) list, enter a prompt, run it, and see output + usage metrics.
+- [ ] Copy button copies the response text to the clipboard; Clear button resets the response text and metrics.
 - [ ] Errors (invalid key, provider timeout, unreachable host) surface as clear UI messages without crashing the server.
 
 ## Test Coverage
@@ -20,10 +21,11 @@
 1. Start with `uvicorn backend.main:app` and confirm it boots with no errors.
 2. Open the Requests page; select **OpenAI**, pick a model from the dropdown, enter a prompt, click run.
 3. Confirm the response shows output text, `prompt_tokens`, `completion_tokens`, and `latency_ms`.
-4. Repeat for Anthropic, Gemini, and OpenRouter.
-5. Switch to Tavily, enter a search query, run it, and confirm result text appears.
-6. Inspect the SQLite DB and confirm each call produced exactly one log row with no stored prompt/response body.
-7. Run with an intentionally invalid key and confirm a clear error message appears in the UI.
+4. Click Copy and confirm the response text is placed on the clipboard; click Clear and confirm the text and metrics reset and the panel hides.
+5. Repeat for Anthropic, Gemini, and OpenRouter.
+6. Switch to Tavily, enter a search query, run it, and confirm result text appears.
+7. Inspect the SQLite DB and confirm each call produced exactly one log row with no stored prompt/response body.
+8. Run with an intentionally invalid key and confirm a clear error message appears in the UI.
 
 ## Edge Cases
 - Invalid or expired API key on each provider → clear error, request still logged with latency.

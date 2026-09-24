@@ -3,3 +3,12 @@ uvicorn[standard]==0.53.0
 httpx==0.28.1
 python-dotenv==1.2.3
 aiosqlite==0.21.0
+
+# Provider SDKs (request runner only)
+openai==3.19.2
+anthropic==1.8.0
+google-genai==2.25.0
+
+# Tests
+pytest==9.1.1
+pytest-asyncio==1.4.0

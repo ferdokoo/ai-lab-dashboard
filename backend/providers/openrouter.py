@@ -3,6 +3,9 @@ OpenRouter provider.
 
 Health check probes ``GET https://openrouter.ai/api/v1/models`` — a read-only
 call that lists models and validates the API key.
+
+``request()`` reuses the OpenAI-compatible helper from ``openai.py``, pointed at
+the OpenRouter endpoint.
 """
 from __future__ import annotations
 
@@ -12,8 +15,10 @@ import httpx
 
 from ..config import settings
 from .base import BaseProvider, model_entry
+from .openai import chat_request
 
 _MODELS_URL = "https://openrouter.ai/api/v1/models"
+_REQUEST_BASE_URL = "https://openrouter.ai/api/v1"
 
 
 class OpenRouterProvider(BaseProvider):
@@ -46,6 +51,21 @@ class OpenRouterProvider(BaseProvider):
                 )
             )
         return entries
+
+    async def request(
+        self,
+        model: str,
+        prompt: str,
+        options: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return await chat_request(
+            api_key=self.api_key,
+            name=self.name,
+            model=model,
+            prompt=prompt,
+            options=options,
+            base_url=_REQUEST_BASE_URL,
+        )
 
 
 def _per_million(value: Any) -> float | None:

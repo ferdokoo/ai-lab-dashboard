@@ -9,6 +9,7 @@ Let a developer send a real prompt (or search query) to any configured provider 
 - `POST /api/{provider}/request` returning `{ text, prompt_tokens, completion_tokens, latency_ms }`.
 - Writing every call to the SQLite request log (timestamp, provider, model, token counts, cost, latency) without storing prompt/response bodies.
 - A dedicated frontend Requests page with provider + model pickers (models loaded live from `GET /api/{provider}/models`, cached and refreshable), a prompt textarea, and a response panel.
+- Copy and Clear controls alongside the token/latency metrics to copy the model response to the clipboard or reset the output.
 
 ## Out of Scope
 - Local inference providers (Ollama, LM Studio) — Phase 5.
