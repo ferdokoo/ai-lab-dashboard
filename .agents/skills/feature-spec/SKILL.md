@@ -31,7 +31,7 @@ Extract from the roadmap:
 
 ### Step 2 — Create a git branch
 
-Create a branch named after the feature:
+Create a branch named after the phase number and feature:
 
 ```
 git checkout -b feature/<slug>
