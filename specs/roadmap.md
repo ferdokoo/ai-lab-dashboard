@@ -26,7 +26,7 @@ _Goal:_ Browse all available models and their pricing from one place without vis
 - `GET /api/{provider}/models` route; results cached in SQLite with a refresh-on-demand button
 - Frontend: provider dropdown + collapsible sortable table (model ID, context window, input $/1M, output $/1M)
 
-## Phase 4 — Request Runner
+## Phase 4 — Request Runner _complete_
 _Goal:_ Send a real prompt to any cloud model and see the full response, latency, and token usage.
 - Each cloud provider implements `request(model, prompt, options)` using its official SDK
 - `POST /api/{provider}/request` route
