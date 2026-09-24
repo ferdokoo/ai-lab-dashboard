@@ -9,27 +9,18 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 import aiosqlite
 
-_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "catalog.db"
-
-_SCHEMA = """
-CREATE TABLE IF NOT EXISTS catalog (
-    provider TEXT PRIMARY KEY,
-    data TEXT NOT NULL,
-    fetched_at TEXT NOT NULL
-);
-"""
+from . import db
 
 
 async def get_catalog(provider: str) -> list[dict[str, Any]] | None:
     """Return the cached model list for ``provider``, or ``None`` when absent."""
-    await _ensure_schema()
-    async with aiosqlite.connect(_DB_PATH) as db:
-        cursor = await db.execute(
+    await db.ensure_schema()
+    async with aiosqlite.connect(db.DB_PATH) as conn:
+        cursor = await conn.execute(
             "SELECT data FROM catalog WHERE provider = ?", (provider,)
         )
         row = await cursor.fetchone()
@@ -40,11 +31,11 @@ async def get_catalog(provider: str) -> list[dict[str, Any]] | None:
 
 async def set_catalog(provider: str, models: list[dict[str, Any]]) -> None:
     """Store (or overwrite) the cached model list for ``provider``."""
-    await _ensure_schema()
+    await db.ensure_schema()
     payload = json.dumps(models)
     fetched_at = datetime.now(timezone.utc).isoformat()
-    async with aiosqlite.connect(_DB_PATH) as db:
-        await db.execute(
+    async with aiosqlite.connect(db.DB_PATH) as conn:
+        await conn.execute(
             """
             INSERT INTO catalog (provider, data, fetched_at)
             VALUES (?, ?, ?)
@@ -54,11 +45,4 @@ async def set_catalog(provider: str, models: list[dict[str, Any]]) -> None:
             """,
             (provider, payload, fetched_at),
         )
-        await db.commit()
-
-
-async def _ensure_schema() -> None:
-    _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    async with aiosqlite.connect(_DB_PATH) as db:
-        await db.execute(_SCHEMA)
-        await db.commit()
+        await conn.commit()

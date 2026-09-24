@@ -210,3 +210,203 @@ document.querySelectorAll("#catalog-table th.sortable").forEach((th) => {
 
 populateProviders();
 loadModels(false);
+
+const runner = {
+  provider: null,
+  models: [],
+  model: null,
+};
+
+const runnerProvider = document.getElementById("runner-provider");
+const runnerModel = document.getElementById("runner-model");
+const runnerModelLabel = document.getElementById("runner-model-label");
+const runnerRefresh = document.getElementById("runner-models-refresh");
+const runnerPrompt = document.getElementById("runner-prompt");
+const runnerRun = document.getElementById("runner-run");
+const runnerStatus = document.getElementById("runner-status");
+const runnerOutput = document.getElementById("runner-output");
+const runnerText = document.getElementById("runner-text");
+const runnerCopy = document.getElementById("runner-copy");
+const runnerClear = document.getElementById("runner-clear");
+
+function populateRunnerProviders() {
+  const names = [...document.querySelectorAll(".card")]
+    .map((card) => card.dataset.provider)
+    .filter(Boolean);
+
+  names.forEach((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name[0].toUpperCase() + name.slice(1);
+    runnerProvider.appendChild(option);
+  });
+
+  runner.provider = runnerProvider.value;
+}
+
+function syncRunnerMode() {
+  const isSearch = runner.provider === "tavily";
+  runnerModel.style.display = isSearch ? "none" : "";
+  runnerModelLabel.style.display = isSearch ? "none" : "";
+  runnerRefresh.style.display = isSearch ? "none" : "";
+  runnerPrompt.placeholder = isSearch ? "Enter a search query…" : "Enter a prompt…";
+}
+
+function setRunnerModelOptions(models) {
+  runnerModel.innerHTML = "";
+  models.forEach((model) => {
+    const option = document.createElement("option");
+    option.value = model.id;
+    option.textContent = model.id;
+    runnerModel.appendChild(option);
+  });
+  runner.model = runnerModel.value;
+}
+
+async function loadRunnerModels(refresh) {
+  if (!runner.provider || runner.provider === "tavily") return;
+
+  setRunnerStatus("Loading models…");
+  const url = `/api/${runner.provider}/models${refresh ? "?refresh=true" : ""}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      let message = `HTTP ${response.status}`;
+      try {
+        const payload = await response.json();
+        message = payload.detail || message;
+      } catch (_) {}
+      throw new Error(message);
+    }
+
+    const data = await response.json();
+    runner.models = data.models || [];
+    setRunnerModelOptions(runner.models);
+    setRunnerStatus("");
+  } catch (err) {
+    runner.models = [];
+    setRunnerModelOptions([]);
+    setRunnerStatus(err.message || "Failed to load models", true);
+  }
+}
+
+function setRunnerStatus(message, isError = false) {
+  runnerStatus.textContent = message;
+  runnerStatus.className = `runner-status${isError ? " error" : ""}`;
+}
+
+function formatMetric(value) {
+  if (value == null) return "—";
+  return value.toLocaleString();
+}
+
+function renderRunnerResult(data) {
+  runnerText.textContent = data.text || "";
+  document.querySelector('[data-metric="prompt_tokens"]').textContent =
+    formatMetric(data.prompt_tokens);
+  document.querySelector('[data-metric="completion_tokens"]').textContent =
+    formatMetric(data.completion_tokens);
+  document.querySelector('[data-metric="latency_ms"]').textContent =
+    formatMetric(data.latency_ms);
+  runnerOutput.classList.remove("hidden");
+}
+
+async function runRequest() {
+  const isSearch = runner.provider === "tavily";
+  const value = runnerPrompt.value.trim();
+
+  if (!value) {
+    setRunnerStatus(isSearch ? "Query cannot be empty" : "Prompt cannot be empty", true);
+    return;
+  }
+  if (!isSearch && !runner.model) {
+    setRunnerStatus("Select a model", true);
+    return;
+  }
+
+  setRunnerStatus("Running…");
+  runnerOutput.classList.add("hidden");
+  runnerRun.disabled = true;
+
+  try {
+    const route = isSearch
+      ? `/api/${runner.provider}/search`
+      : `/api/${runner.provider}/request`;
+    const body = isSearch
+      ? { query: value }
+      : { model: runner.model, prompt: value };
+
+    const response = await fetch(route, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      let message = `HTTP ${response.status}`;
+      try {
+        const payload = await response.json();
+        message = payload.detail || message;
+      } catch (_) {}
+      throw new Error(message);
+    }
+
+    const data = await response.json();
+    renderRunnerResult(data);
+    setRunnerStatus("");
+  } catch (err) {
+    setRunnerStatus(err.message || "Request failed", true);
+  } finally {
+    runnerRun.disabled = false;
+  }
+}
+
+runnerProvider.addEventListener("change", () => {
+  runner.provider = runnerProvider.value;
+  runner.model = null;
+  runner.models = [];
+  setRunnerModelOptions([]);
+  runnerOutput.classList.add("hidden");
+  syncRunnerMode();
+  loadRunnerModels(false);
+});
+
+runnerModel.addEventListener("change", () => {
+  runner.model = runnerModel.value;
+});
+
+runnerRefresh.addEventListener("click", () => {
+  loadRunnerModels(true);
+});
+
+runnerRun.addEventListener("click", runRequest);
+
+function setMetric(key, value) {
+  document.querySelector(`[data-metric="${key}"]`).textContent = value;
+}
+
+runnerCopy.addEventListener("click", async () => {
+  const text = runnerText.textContent;
+  if (!text) return;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    setRunnerStatus("Copied to clipboard");
+  } catch (err) {
+    setRunnerStatus("Copy failed", true);
+  }
+});
+
+runnerClear.addEventListener("click", () => {
+  runnerText.textContent = "";
+  setMetric("prompt_tokens", "—");
+  setMetric("completion_tokens", "—");
+  setMetric("latency_ms", "—");
+  runnerOutput.classList.add("hidden");
+  setRunnerStatus("");
+});
+
+populateRunnerProviders();
+syncRunnerMode();
+loadRunnerModels(false);

@@ -9,6 +9,7 @@ frontend rely on:
 * ``models()``  -> normalized list of available models
 * ``balance()`` -> balance/usage info, or ``None`` when unsupported
 * ``request()`` -> response text plus token/latency metrics
+* ``search()``  -> search-text response (Tavily), token metrics ``None``
 
 ``health()`` is implemented once here (shared latency / timeout / error
 handling) and delegates the actual probe request to ``_probe()``, which each
@@ -143,10 +144,33 @@ class BaseProvider:
         """Send a prompt and return response text plus usage metrics."""
         raise NotImplementedError
 
+    async def search(
+        self,
+        query: str,
+        options: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Run a search query and return result text (token metrics ``None``)."""
+        raise NotImplementedError
+
 
 def _result(status: str, latency_ms: int | None, error: str | None) -> dict[str, Any]:
     """Build the normalized health response dict."""
     return {"status": status, "latency_ms": latency_ms, "error": error}
+
+
+def request_result(
+    text: str,
+    prompt_tokens: int | None,
+    completion_tokens: int | None,
+    latency_ms: int,
+) -> dict[str, Any]:
+    """Build the normalized request response dict."""
+    return {
+        "text": text,
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "latency_ms": latency_ms,
+    }
 
 
 def model_entry(

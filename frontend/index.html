@@ -9,7 +9,7 @@
 <body>
   <header class="page-header">
     <h1>AI Lab Dashboard</h1>
-    <p>Provider health checks · model catalog</p>
+    <p>Provider health checks · model catalog · request runner</p>
   </header>
 
   <main>
@@ -91,6 +91,48 @@
             </thead>
             <tbody id="catalog-tbody"></tbody>
           </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="runner" id="request-runner">
+      <header class="runner-header">
+        <h2>Request Runner</h2>
+      </header>
+
+      <div class="runner-body">
+        <div class="runner-controls">
+          <label for="runner-provider">Provider</label>
+          <select id="runner-provider"></select>
+
+          <label for="runner-model" id="runner-model-label">Model</label>
+          <select id="runner-model"></select>
+          <button type="button" class="runner-refresh" id="runner-models-refresh">Refresh</button>
+        </div>
+
+        <textarea
+          id="runner-prompt"
+          class="runner-prompt"
+          rows="6"
+          placeholder="Enter a prompt…"
+        ></textarea>
+
+        <div class="runner-actions">
+          <button type="button" id="runner-run">Run</button>
+          <span class="runner-status" id="runner-status"></span>
+        </div>
+
+        <div class="runner-output hidden" id="runner-output">
+          <div class="runner-metrics">
+            <span>prompt tokens: <b data-metric="prompt_tokens">—</b></span>
+            <span>completion tokens: <b data-metric="completion_tokens">—</b></span>
+            <span>latency: <b data-metric="latency_ms">—</b> ms</span>
+            <span class="runner-output-actions">
+              <button type="button" id="runner-copy">Copy</button>
+              <button type="button" id="runner-clear">Clear</button>
+            </span>
+          </div>
+          <pre class="runner-text" id="runner-text"></pre>
         </div>
       </div>
     </section>

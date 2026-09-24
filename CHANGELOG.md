@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-09-24
+- feat: Implement request runner functionality with backend tests and frontend UI (918623e)
+- Add initial plan, requirements, and validation for Request Runner feature (cf0f7cd)
+- Update changelog (c56a61a)
 - Implement model catalog feature: add SQLite caching, provider routes, and frontend integration for model listings and pricing (c058969)
 - Refine model catalog specifications: remove static pricing tables, implement provider-supplied pricing, and enhance frontend with provider dropdown and collapsible table (e07c2fd)
 - Add model catalog specifications, requirements, and validation criteria (ffef380)
