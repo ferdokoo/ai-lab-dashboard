@@ -3,6 +3,9 @@
 /out-tsc
 /dist
 
+# SQLite catalog cache
+/data
+
 # Environment Variables
 .env
 

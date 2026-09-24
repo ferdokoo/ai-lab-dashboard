@@ -6,10 +6,12 @@ read-only call that validates the API key.
 """
 from __future__ import annotations
 
+from typing import Any
+
 import httpx
 
 from ..config import settings
-from .base import BaseProvider
+from .base import BaseProvider, model_entry
 
 _MODELS_URL = "https://api.openai.com/v1/models"
 
@@ -26,6 +28,11 @@ class OpenAIProvider(BaseProvider):
             _MODELS_URL,
             headers={"Authorization": f"Bearer {self.api_key}"},
         )
+
+    async def models(self) -> list[dict[str, Any]]:
+        response = await self._list_models()
+        data = response.json()
+        return [model_entry(model_id=item["id"]) for item in data.get("data", [])]
 
 
 provider = OpenAIProvider()

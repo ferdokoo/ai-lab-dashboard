@@ -122,3 +122,135 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
+
+.catalog {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+}
+
+.catalog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.catalog-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.catalog-toggle,
+.catalog-refresh {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.catalog-toggle:hover,
+.catalog-refresh:hover {
+  background: #20242f;
+}
+
+.catalog-body {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.catalog-body.hidden {
+  display: none;
+}
+
+.catalog-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.catalog-controls label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.catalog-controls select {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.catalog-status {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.catalog-status.error {
+  color: var(--red);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+#catalog-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+#catalog-table th,
+#catalog-table td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+#catalog-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--card-bg);
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#catalog-table thead th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+#catalog-table thead th.sortable:hover {
+  color: var(--text);
+}
+
+#catalog-table thead th[data-dir="asc"]::after {
+  content: " ▲";
+  color: var(--text);
+}
+
+#catalog-table thead th[data-dir="desc"]::after {
+  content: " ▼";
+  color: var(--text);
+}
+
+#catalog-table td.blank {
+  color: var(--grey);
+}
+
+.catalog-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+}

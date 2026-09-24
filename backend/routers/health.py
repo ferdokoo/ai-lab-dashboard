@@ -11,24 +11,15 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from ..providers import anthropic, gemini, openai, openrouter, tavily
-from ..providers.base import BaseProvider
+from ..providers import PROVIDERS
 
 router = APIRouter(prefix="/api", tags=["health"])
-
-_PROVIDERS: dict[str, BaseProvider] = {
-    openai.provider.name: openai.provider,
-    anthropic.provider.name: anthropic.provider,
-    gemini.provider.name: gemini.provider,
-    openrouter.provider.name: openrouter.provider,
-    tavily.provider.name: tavily.provider,
-}
 
 
 @router.get("/{provider}/health")
 async def provider_health(provider: str) -> dict[str, Any]:
     """Run a health probe for the named provider."""
-    impl = _PROVIDERS.get(provider.lower())
+    impl = PROVIDERS.get(provider.lower())
     if impl is None:
         raise HTTPException(status_code=404, detail=f"Unknown provider: {provider}")
 

@@ -9,7 +9,7 @@
 <body>
   <header class="page-header">
     <h1>AI Lab Dashboard</h1>
-    <p>Provider health checks</p>
+    <p>Provider health checks · model catalog</p>
   </header>
 
   <main>
@@ -54,7 +54,7 @@
         <button type="button" data-role="check">Check</button>
       </article>
 
-      <article class="card" data-provider="tavily">
+      <article class="card" data-provider="tavily" data-catalog="false">
         <h2>Tavily</h2>
         <div class="indicators">
           <span class="status" data-role="status"></span>
@@ -63,6 +63,36 @@
         <p class="error" data-role="error"></p>
         <button type="button" data-role="check">Check</button>
       </article>
+    </section>
+
+    <section class="catalog" id="model-catalog">
+      <header class="catalog-header">
+        <h2>Model Catalog</h2>
+        <button type="button" class="catalog-toggle" id="catalog-toggle" aria-expanded="true">Hide</button>
+      </header>
+
+      <div class="catalog-body" id="catalog-body">
+        <div class="catalog-controls">
+          <label for="provider-select">Provider</label>
+          <select id="provider-select"></select>
+          <button type="button" class="catalog-refresh" id="catalog-refresh">Refresh</button>
+          <span class="catalog-status" id="catalog-status"></span>
+        </div>
+
+        <div class="table-wrap">
+          <table id="catalog-table">
+            <thead>
+              <tr>
+                <th data-key="id" class="sortable">Model ID</th>
+                <th data-key="context_window" class="sortable">Context Window</th>
+                <th data-key="input_price_per_million" class="sortable">Input $/1M</th>
+                <th data-key="output_price_per_million" class="sortable">Output $/1M</th>
+              </tr>
+            </thead>
+            <tbody id="catalog-tbody"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
   </main>
 

@@ -10,9 +10,19 @@ frontend rely on:
 * ``balance()`` -> balance/usage info, or ``None`` when unsupported
 * ``request()`` -> response text plus token/latency metrics
 
-Only ``health()`` is implemented in this phase.  ``health()`` itself is
-implemented once here (shared latency / timeout / error handling) and delegates
-the actual probe request to ``_probe()``, which each provider overrides.
+``health()`` is implemented once here (shared latency / timeout / error
+handling) and delegates the actual probe request to ``_probe()``, which each
+provider overrides.
+
+``models()`` returns a list of normalized entries, each with the shape::
+
+    {
+        "id": str,
+        "context_window": int | None,
+        "input_price_per_million": float | None,
+        "output_price_per_million": float | None,
+        "pricing_source": "api" | "tavily" | None,
+    }
 """
 from __future__ import annotations
 
@@ -27,6 +37,15 @@ STATUS_TIMEOUT = "timeout"
 STATUS_ERROR = "error"
 
 
+class ProviderError(Exception):
+    """Raised when a provider cannot service a call (missing key, API error)."""
+
+    def __init__(self, message: str, status_code: int = 502) -> None:
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+
+
 class BaseProvider:
     """Base class all providers inherit from."""
 
@@ -35,6 +54,10 @@ class BaseProvider:
 
     #: Request timeout in seconds.
     timeout: float = 5.0
+
+    #: Whether the provider's ``models()`` response already carries pricing.
+    #: When ``False``, the router resolves top-model prices via Tavily search.
+    supplies_pricing: bool = False
 
     @property
     def api_key(self) -> str | None:
@@ -79,8 +102,33 @@ class BaseProvider:
         raise NotImplementedError
 
     async def models(self) -> list[dict[str, Any]]:
-        """Return a normalized list of available models."""
+        """Return a normalized list of available models.
+
+        Each entry uses :func:`model_entry` shape (``id``, ``context_window``,
+        ``input_price_per_million``, ``output_price_per_million``,
+        ``pricing_source``).  Pricing included by the API is merged here;
+        providers without API pricing leave those fields ``None``.
+        """
         raise NotImplementedError
+
+    async def _list_models(self) -> httpx.Response:
+        """Fetch the provider's model list, validating the key and mapping errors.
+
+        Reuses ``_probe()`` for the actual request and converts failures into
+        :class:`ProviderError` so the router can surface a clear HTTP response.
+        """
+        if not self.api_key:
+            raise ProviderError(f"No {self.name} API key configured", status_code=401)
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await self._probe(client)
+        except httpx.TimeoutException:
+            raise ProviderError("Request timed out") from None
+        except httpx.RequestError as exc:
+            raise ProviderError(f"Request failed: {exc}") from None
+        if response.status_code >= 300:
+            raise ProviderError(f"HTTP {response.status_code}")
+        return response
 
     async def balance(self) -> dict[str, Any] | None:
         """Return balance/usage info, or ``None`` when the provider doesn't expose it."""
@@ -99,3 +147,20 @@ class BaseProvider:
 def _result(status: str, latency_ms: int | None, error: str | None) -> dict[str, Any]:
     """Build the normalized health response dict."""
     return {"status": status, "latency_ms": latency_ms, "error": error}
+
+
+def model_entry(
+    model_id: str,
+    context_window: int | None = None,
+    input_price_per_million: float | None = None,
+    output_price_per_million: float | None = None,
+    pricing_source: str | None = None,
+) -> dict[str, Any]:
+    """Build one normalized model-catalog entry."""
+    return {
+        "id": model_id,
+        "context_window": context_window,
+        "input_price_per_million": input_price_per_million,
+        "output_price_per_million": output_price_per_million,
+        "pricing_source": pricing_source,
+    }

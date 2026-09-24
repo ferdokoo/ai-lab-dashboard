@@ -18,13 +18,13 @@ _Goal:_ Tell you instantly which keys are valid and which endpoints are reachabl
 - `GET /api/{provider}/health` route returning status + latency
 - Frontend: one card per provider, button triggers health check, green/red indicator + response time
 
-## Phase 3 — Model Catalog
+## Phase 3 — Model Catalog ✓ _complete_
 _Goal:_ Browse all available models and their pricing from one place without visiting provider docs.
 - Each provider implements `models()` returning a normalised list
-- `backend/pricing.py` — static pricing tables for providers that don't return price in the API (OpenAI, Anthropic, Gemini)
+- `backend/pricing.py` — resolves top-model prices via the Tavily search tool for providers that don't return price in the API (OpenAI, Anthropic, Gemini); no static tables
 - OpenRouter pricing merged from live API response
 - `GET /api/{provider}/models` route; results cached in SQLite with a refresh-on-demand button
-- Frontend: sortable table per provider (model ID, context window, input $/1M, output $/1M)
+- Frontend: provider dropdown + collapsible sortable table (model ID, context window, input $/1M, output $/1M)
 
 ## Phase 4 — Request Runner
 _Goal:_ Send a real prompt to any cloud model and see the full response, latency, and token usage.
