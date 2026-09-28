@@ -164,6 +164,57 @@
         </div>
       </div>
     </section>
+
+    <section class="history" id="history">
+      <header class="history-header">
+        <h2>History</h2>
+        <button type="button" id="history-export">Export CSV</button>
+      </header>
+
+      <div class="history-body">
+        <div class="history-controls">
+          <label for="history-provider">Provider</label>
+          <select id="history-provider">
+            <option value="">All</option>
+          </select>
+
+          <label for="history-model">Model</label>
+          <input type="text" id="history-model" placeholder="Exact model id" />
+
+          <label for="history-start">From</label>
+          <input type="date" id="history-start" />
+
+          <label for="history-end">To</label>
+          <input type="date" id="history-end" />
+
+          <button type="button" class="history-refresh" id="history-refresh">Refresh</button>
+          <span class="history-status" id="history-status"></span>
+        </div>
+
+        <div class="table-wrap">
+          <table id="history-table">
+            <thead>
+              <tr>
+                <th data-key="timestamp" class="sortable">Timestamp</th>
+                <th data-key="provider" class="sortable">Provider</th>
+                <th data-key="model" class="sortable">Model</th>
+                <th data-key="prompt_tokens" class="sortable">Prompt Tokens</th>
+                <th data-key="completion_tokens" class="sortable">Completion Tokens</th>
+                <th data-key="estimated_cost_usd" class="sortable">Cost</th>
+                <th data-key="latency_ms" class="sortable">Latency</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="history-pagination">
+          <button type="button" id="history-prev" disabled>Previous</button>
+          <span id="history-page-info"></span>
+          <button type="button" id="history-next" disabled>Next</button>
+        </div>
+      </div>
+    </section>
   </main>
 
   <script src="/static/app.js"></script>

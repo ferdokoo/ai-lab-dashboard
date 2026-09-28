@@ -50,7 +50,7 @@ _Goal:_ Show real credit/balance numbers where the API supports it; be honest wh
 - OpenAI / Anthropic / Gemini: `balance()` returns `None`; UI shows per-request token totals instead and links to provider billing page
 - Frontend: balance panel per provider; honest "not available via API" message with billing link for unsupported providers
 
-## Phase 7 — History Log
+## Phase 7 — History Log _complete_
 _Goal:_ Make every past test call browsable so patterns and costs are visible over time.
 - SQLite schema: `requests(id, timestamp, provider, model, prompt_tokens, completion_tokens, estimated_cost_usd, latency_ms)`
 - `GET /api/history` with filter params: provider, model, date range, limit/offset

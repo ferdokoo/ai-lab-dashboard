@@ -546,3 +546,157 @@ body {
   font-size: 0.9rem;
   line-height: 1.5;
 }
+
+.history {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.history-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.history-header button,
+.history-refresh {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.history-header button:hover,
+.history-refresh:hover {
+  background: #20242f;
+}
+
+.history-body {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.history-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.history-controls label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.history-controls select,
+.history-controls input {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.history-controls input[type="date"] {
+  color-scheme: dark;
+}
+
+.history-status {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.history-status.error {
+  color: var(--red);
+}
+
+#history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+#history-table th,
+#history-table td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+#history-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--card-bg);
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#history-table thead th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+#history-table thead th.sortable:hover {
+  color: var(--text);
+}
+
+#history-table thead th[data-dir="asc"]::after {
+  content: " ▲";
+  color: var(--text);
+}
+
+#history-table thead th[data-dir="desc"]::after {
+  content: " ▼";
+  color: var(--text);
+}
+
+#history-table td.blank {
+  color: var(--grey);
+}
+
+.history-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.history-pagination button {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.history-pagination button:hover:not(:disabled) {
+  background: #20242f;
+}
+
+.history-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.history-pagination span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}

@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from .routers import balance, health, models, request
+from .routers import balance, health, history, models, request
 
 app = FastAPI(title="AI Lab Dashboard")
 
@@ -20,6 +20,7 @@ app.include_router(health.router)
 app.include_router(models.router)
 app.include_router(request.router)
 app.include_router(balance.router)
+app.include_router(history.router)
 
 _FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 

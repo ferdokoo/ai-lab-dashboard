@@ -558,3 +558,248 @@ balanceRefreshAll.addEventListener("click", () => {
     loadBalance(card.dataset.provider, card);
   });
 });
+
+const history = {
+  provider: "",
+  model: "",
+  start: "",
+  end: "",
+  limit: 50,
+  offset: 0,
+  total: 0,
+  items: [],
+  sortKey: "timestamp",
+  sortDir: "desc",
+};
+
+const historyProvider = document.getElementById("history-provider");
+const historyModel = document.getElementById("history-model");
+const historyStart = document.getElementById("history-start");
+const historyEnd = document.getElementById("history-end");
+const historyRefresh = document.getElementById("history-refresh");
+const historyExport = document.getElementById("history-export");
+const historyTbody = document.getElementById("history-tbody");
+const historyStatus = document.getElementById("history-status");
+const historyPrev = document.getElementById("history-prev");
+const historyNext = document.getElementById("history-next");
+const historyPageInfo = document.getElementById("history-page-info");
+
+function populateHistoryProviders() {
+  const providers = [...document.querySelectorAll(".card")]
+    .map((card) => card.dataset.provider)
+    .filter(Boolean);
+
+  providers.forEach((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name[0].toUpperCase() + name.slice(1);
+    historyProvider.appendChild(option);
+  });
+}
+
+function setHistoryStatus(message, isError = false) {
+  historyStatus.textContent = message;
+  historyStatus.className = `history-status${isError ? " error" : ""}`;
+}
+
+function historyFilters() {
+  const params = new URLSearchParams();
+  if (history.provider) params.set("provider", history.provider);
+  if (history.model) params.set("model", history.model);
+  if (history.start) params.set("start", history.start);
+  if (history.end) params.set("end", history.end);
+  return params;
+}
+
+function formatCount(value) {
+  if (value == null) return "—";
+  return value.toLocaleString();
+}
+
+function formatCost(value) {
+  if (value == null) return "—";
+  return "$" + value.toLocaleString(undefined, { maximumFractionDigits: 8 });
+}
+
+function formatLatency(value) {
+  if (value == null) return "—";
+  return `${value.toLocaleString()} ms`;
+}
+
+function formatTimestamp(value) {
+  if (value == null) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
+function sortedHistory() {
+  const { sortKey, sortDir, items } = history;
+  const dir = sortDir === "asc" ? 1 : -1;
+
+  return [...items].sort((a, b) => {
+    const av = a[sortKey];
+    const bv = b[sortKey];
+
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+
+    if (typeof av === "number" && typeof bv === "number") {
+      return (av - bv) * dir;
+    }
+    return String(av).localeCompare(String(bv)) * dir;
+  });
+}
+
+function renderHistory() {
+  historyTbody.innerHTML = "";
+
+  const items = sortedHistory();
+  if (items.length === 0) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 7;
+    td.className = "catalog-empty";
+    td.textContent = "No requests recorded yet.";
+    tr.appendChild(td);
+    historyTbody.appendChild(tr);
+    updateHistoryPagination();
+    return;
+  }
+
+  items.forEach((row) => {
+    const tr = document.createElement("tr");
+
+    const ts = document.createElement("td");
+    ts.textContent = formatTimestamp(row.timestamp);
+
+    const provider = document.createElement("td");
+    provider.textContent = row.provider;
+
+    const model = document.createElement("td");
+    model.textContent = row.model || "—";
+    if (!row.model) model.className = "blank";
+
+    const pt = document.createElement("td");
+    pt.textContent = formatCount(row.prompt_tokens);
+    if (row.prompt_tokens == null) pt.className = "blank";
+
+    const ct = document.createElement("td");
+    ct.textContent = formatCount(row.completion_tokens);
+    if (row.completion_tokens == null) ct.className = "blank";
+
+    const cost = document.createElement("td");
+    cost.textContent = formatCost(row.estimated_cost_usd);
+    if (row.estimated_cost_usd == null) cost.className = "blank";
+
+    const latency = document.createElement("td");
+    latency.textContent = formatLatency(row.latency_ms);
+    if (row.latency_ms == null) latency.className = "blank";
+
+    tr.append(ts, provider, model, pt, ct, cost, latency);
+    historyTbody.appendChild(tr);
+  });
+
+  updateHistoryPagination();
+  document.querySelectorAll("#history-table th.sortable").forEach((th) => {
+    th.dataset.dir = th.dataset.key === history.sortKey ? history.sortDir : "";
+  });
+}
+
+function updateHistoryPagination() {
+  const { total, offset, limit, items } = history;
+  const shown = items.length;
+  const from = total === 0 ? 0 : offset + 1;
+  const to = total === 0 ? 0 : offset + shown;
+
+  historyPageInfo.textContent = total === 0 ? "No results" : `${from}–${to} of ${total}`;
+  historyPrev.disabled = offset === 0;
+  historyNext.disabled = offset + limit >= total;
+}
+
+async function loadHistory() {
+  setHistoryStatus("Loading…");
+  const params = historyFilters();
+  params.set("limit", history.limit);
+  params.set("offset", history.offset);
+
+  try {
+    const response = await fetch(`/api/history?${params.toString()}`);
+    let data;
+    try {
+      data = await response.json();
+    } catch (_) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
+
+    history.items = data.items || [];
+    history.total = data.total || 0;
+    renderHistory();
+    setHistoryStatus("");
+  } catch (err) {
+    history.items = [];
+    history.total = 0;
+    renderHistory();
+    setHistoryStatus(err.message || "Failed to load history", true);
+  }
+}
+
+function resetHistoryPage() {
+  history.offset = 0;
+  loadHistory();
+}
+
+historyProvider.addEventListener("change", () => {
+  history.provider = historyProvider.value;
+  resetHistoryPage();
+});
+
+historyModel.addEventListener("change", () => {
+  history.model = historyModel.value.trim();
+  resetHistoryPage();
+});
+
+historyStart.addEventListener("change", () => {
+  history.start = historyStart.value;
+  resetHistoryPage();
+});
+
+historyEnd.addEventListener("change", () => {
+  history.end = historyEnd.value;
+  resetHistoryPage();
+});
+
+historyRefresh.addEventListener("click", resetHistoryPage);
+
+historyPrev.addEventListener("click", () => {
+  history.offset = Math.max(0, history.offset - history.limit);
+  loadHistory();
+});
+
+historyNext.addEventListener("click", () => {
+  history.offset += history.limit;
+  loadHistory();
+});
+
+historyExport.addEventListener("click", () => {
+  const params = historyFilters();
+  window.location.href = `/api/history/export${params.toString() ? "?" + params.toString() : ""}`;
+});
+
+document.querySelectorAll("#history-table th.sortable").forEach((th) => {
+  th.addEventListener("click", () => {
+    const key = th.dataset.key;
+    if (history.sortKey === key) {
+      history.sortDir = history.sortDir === "asc" ? "desc" : "asc";
+    } else {
+      history.sortKey = key;
+      history.sortDir = key === "timestamp" ? "desc" : "asc";
+    }
+    renderHistory();
+  });
+});
+
+populateHistoryProviders();
+loadHistory();
