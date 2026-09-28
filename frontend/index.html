@@ -165,6 +165,63 @@
       </div>
     </section>
 
+    <section class="cost" id="cost-calculator">
+      <header class="cost-header">
+        <h2>Cost Calculator</h2>
+      </header>
+
+      <div class="cost-body">
+        <div class="cost-controls">
+          <label for="cost-provider">Provider</label>
+          <select id="cost-provider"></select>
+
+          <label for="cost-model">Model</label>
+          <select id="cost-model"></select>
+
+          <label for="cost-prompt-tokens">Prompt tokens</label>
+          <input type="number" id="cost-prompt-tokens" min="0" value="1000" />
+
+          <label for="cost-completion-tokens">Completion tokens</label>
+          <input type="number" id="cost-completion-tokens" min="0" value="500" />
+
+          <button type="button" id="cost-calculate">Estimate</button>
+          <span class="cost-status" id="cost-status"></span>
+        </div>
+
+        <div class="cost-result" id="cost-result">
+          <span class="cost-estimate" id="cost-estimate">—</span>
+          <span class="cost-detail" id="cost-detail"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="compare" id="compare-mode">
+      <header class="compare-header">
+        <h2>Compare Mode</h2>
+      </header>
+
+      <div class="compare-body">
+        <div class="compare-controls">
+          <div class="compare-targets" id="compare-targets"></div>
+          <button type="button" class="compare-add" id="compare-add-target">+ Add model</button>
+
+          <textarea
+            id="compare-prompt"
+            class="compare-prompt"
+            rows="4"
+            placeholder="Enter a prompt to send to every selected model…"
+          ></textarea>
+
+          <div class="compare-actions">
+            <button type="button" id="compare-run">Run comparison</button>
+            <span class="compare-status" id="compare-status"></span>
+          </div>
+        </div>
+
+        <div class="compare-results" id="compare-results"></div>
+      </div>
+    </section>
+
     <section class="history" id="history">
       <header class="history-header">
         <h2>History</h2>

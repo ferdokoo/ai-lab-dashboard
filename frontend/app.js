@@ -803,3 +803,345 @@ document.querySelectorAll("#history-table th.sortable").forEach((th) => {
 
 populateHistoryProviders();
 loadHistory();
+
+const costCalc = {
+  provider: null,
+  models: [],
+  model: null,
+};
+
+const costProvider = document.getElementById("cost-provider");
+const costModel = document.getElementById("cost-model");
+const costPromptTokens = document.getElementById("cost-prompt-tokens");
+const costCompletionTokens = document.getElementById("cost-completion-tokens");
+const costCalculate = document.getElementById("cost-calculate");
+const costStatus = document.getElementById("cost-status");
+const costEstimate = document.getElementById("cost-estimate");
+const costDetail = document.getElementById("cost-detail");
+
+function populateCostProviders() {
+  const providers = [...document.querySelectorAll(".card")]
+    .filter((card) => card.dataset.catalog !== "false")
+    .map((card) => card.dataset.provider)
+    .filter(Boolean);
+
+  providers.forEach((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name[0].toUpperCase() + name.slice(1);
+    costProvider.appendChild(option);
+  });
+
+  costCalc.provider = costProvider.value;
+}
+
+function setCostModelOptions(models) {
+  costModel.innerHTML = "";
+  models.forEach((model) => {
+    const option = document.createElement("option");
+    option.value = model.id;
+    option.textContent = model.id;
+    costModel.appendChild(option);
+  });
+  costCalc.model = costModel.value;
+}
+
+async function loadCostModels() {
+  if (!costCalc.provider) return;
+
+  setCostModelOptions([]);
+  const url = `/api/${costCalc.provider}/models`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    costCalc.models = data.models || [];
+    setCostModelOptions(costCalc.models);
+  } catch (err) {
+    costCalc.models = [];
+    setCostModelOptions([]);
+  }
+}
+
+function setCostStatus(message, isError = false) {
+  costStatus.textContent = message;
+  costStatus.className = `cost-status${isError ? " error" : ""}`;
+}
+
+function renderCostResult(data) {
+  if (data.estimated_cost_usd == null) {
+    costEstimate.textContent = "Unknown";
+    costDetail.textContent = data.pricing_source
+      ? "No cached price for this model — refresh the catalog and try again."
+      : "No cached pricing available for this model.";
+    costEstimate.className = "cost-estimate blank";
+    return;
+  }
+
+  costEstimate.className = "cost-estimate";
+  costEstimate.textContent =
+    "$" + data.estimated_cost_usd.toLocaleString(undefined, { maximumFractionDigits: 8 });
+
+  const parts = [];
+  if (data.input_price_per_million != null) {
+    parts.push(`in $${data.input_price_per_million.toFixed(2)}/1M`);
+  }
+  if (data.output_price_per_million != null) {
+    parts.push(`out $${data.output_price_per_million.toFixed(2)}/1M`);
+  }
+  if (data.pricing_source) {
+    parts.push(`source: ${data.pricing_source}`);
+  }
+  costDetail.textContent = parts.join(" · ");
+}
+
+async function calculateCost() {
+  if (!costCalc.provider || !costCalc.model) {
+    setCostStatus("Select a provider and model", true);
+    return;
+  }
+
+  const promptTokens = Number(costPromptTokens.value);
+  const completionTokens = Number(costCompletionTokens.value);
+  const valid =
+    Number.isFinite(promptTokens) && promptTokens >= 0 &&
+    Number.isFinite(completionTokens) && completionTokens >= 0;
+  if (!valid) {
+    setCostStatus("Enter non-negative token counts", true);
+    return;
+  }
+
+  setCostStatus("Estimating…");
+  const params = new URLSearchParams({
+    provider: costCalc.provider,
+    model: costCalc.model,
+    prompt_tokens: String(promptTokens),
+    completion_tokens: String(completionTokens),
+  });
+
+  try {
+    const response = await fetch(`/api/cost?${params.toString()}`);
+    let data;
+    try {
+      data = await response.json();
+    } catch (_) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
+
+    renderCostResult(data);
+    setCostStatus("");
+  } catch (err) {
+    setCostStatus(err.message || "Estimate failed", true);
+  }
+}
+
+costProvider.addEventListener("change", () => {
+  costCalc.provider = costProvider.value;
+  costCalc.model = null;
+  setCostModelOptions([]);
+  loadCostModels();
+});
+
+costModel.addEventListener("change", () => {
+  costCalc.model = costModel.value;
+});
+
+costCalculate.addEventListener("click", calculateCost);
+
+populateCostProviders();
+loadCostModels();
+
+const compareProviders = [...document.querySelectorAll(".card")]
+  .map((card) => card.dataset.provider)
+  .filter(Boolean)
+  .filter((name) => name !== "tavily");
+
+const compareTargets = document.getElementById("compare-targets");
+const compareAddTarget = document.getElementById("compare-add-target");
+const comparePrompt = document.getElementById("compare-prompt");
+const compareRun = document.getElementById("compare-run");
+const compareStatus = document.getElementById("compare-status");
+const compareResults = document.getElementById("compare-results");
+
+function setCompareStatus(message, isError = false) {
+  compareStatus.textContent = message;
+  compareStatus.className = `compare-status${isError ? " error" : ""}`;
+}
+
+async function loadTargetModels(provider, modelSelect) {
+  modelSelect.innerHTML = "";
+  modelSelect.disabled = true;
+  const placeholder = document.createElement("option");
+  placeholder.textContent = "Loading…";
+  modelSelect.appendChild(placeholder);
+
+  try {
+    const response = await fetch(`/api/${provider}/models`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const models = data.models || [];
+
+    modelSelect.innerHTML = "";
+    models.forEach((model) => {
+      const option = document.createElement("option");
+      option.value = model.id;
+      option.textContent = model.id;
+      modelSelect.appendChild(option);
+    });
+    modelSelect.disabled = false;
+  } catch (_) {
+    modelSelect.innerHTML = "";
+    const option = document.createElement("option");
+    option.textContent = "Failed to load";
+    modelSelect.appendChild(option);
+  }
+}
+
+function createTargetRow() {
+  const row = document.createElement("div");
+  row.className = "compare-target-row";
+
+  const providerLabel = document.createElement("label");
+  providerLabel.textContent = "Provider";
+  const providerSelect = document.createElement("select");
+  compareProviders.forEach((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name[0].toUpperCase() + name.slice(1);
+    providerSelect.appendChild(option);
+  });
+
+  const modelLabel = document.createElement("label");
+  modelLabel.textContent = "Model";
+  const modelSelect = document.createElement("select");
+  modelSelect.disabled = true;
+
+  const removeButton = document.createElement("button");
+  removeButton.type = "button";
+  removeButton.textContent = "Remove";
+  removeButton.addEventListener("click", () => row.remove());
+
+  row.append(providerLabel, providerSelect, modelLabel, modelSelect, removeButton);
+
+  providerSelect.addEventListener("change", () => {
+    loadTargetModels(providerSelect.value, modelSelect);
+  });
+
+  loadTargetModels(providerSelect.value, modelSelect);
+
+  compareTargets.appendChild(row);
+  return row;
+}
+
+function collectTargets() {
+  const targets = [];
+  compareTargets.querySelectorAll(".compare-target-row").forEach((row) => {
+    const [providerSelect, modelSelect] = row.querySelectorAll("select");
+    const provider = providerSelect.value;
+    const model = modelSelect.value;
+    if (provider && model && !modelSelect.disabled) {
+      targets.push({ provider, model });
+    }
+  });
+  return targets;
+}
+
+function compareBadge(label, value) {
+  const span = document.createElement("span");
+  const strong = document.createElement("b");
+  strong.textContent = value;
+  span.append(`${label}: `, strong);
+  return span;
+}
+
+function renderCompareResults(results) {
+  compareResults.innerHTML = "";
+
+  results.forEach((result) => {
+    const card = document.createElement("article");
+    card.className = "compare-card";
+
+    const title = document.createElement("h3");
+    title.textContent = result.provider.charAt(0).toUpperCase() + result.provider.slice(1);
+
+    const model = document.createElement("div");
+    model.className = "compare-card-model";
+    model.textContent = result.model || "—";
+
+    card.append(title, model);
+
+    if (result.error) {
+      card.classList.add("error-card");
+      const error = document.createElement("p");
+      error.className = "compare-card-error";
+      error.textContent = result.error;
+      card.appendChild(error);
+      compareResults.appendChild(card);
+      return;
+    }
+
+    const badges = document.createElement("div");
+    badges.className = "compare-badges";
+    badges.append(
+      compareBadge("latency", result.latency_ms != null ? `${result.latency_ms.toLocaleString()} ms` : "—"),
+      compareBadge("in", result.prompt_tokens != null ? result.prompt_tokens.toLocaleString() : "—"),
+      compareBadge("out", result.completion_tokens != null ? result.completion_tokens.toLocaleString() : "—"),
+      compareBadge("cost", result.estimated_cost_usd != null
+        ? "$" + result.estimated_cost_usd.toLocaleString(undefined, { maximumFractionDigits: 8 })
+        : "—")
+    );
+
+    const pre = document.createElement("pre");
+    pre.textContent = result.text || "";
+
+    card.append(badges, pre);
+    compareResults.appendChild(card);
+  });
+}
+
+async function runComparison() {
+  const prompt = comparePrompt.value.trim();
+  if (!prompt) {
+    setCompareStatus("Prompt cannot be empty", true);
+    return;
+  }
+
+  const targets = collectTargets();
+  if (targets.length === 0) {
+    setCompareStatus("Select at least one model", true);
+    return;
+  }
+
+  setCompareStatus("Running…");
+  compareRun.disabled = true;
+  compareResults.innerHTML = "";
+
+  try {
+    const response = await fetch("/api/broadcast", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, targets }),
+    });
+    let data;
+    try {
+      data = await response.json();
+    } catch (_) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
+
+    renderCompareResults(data.results || []);
+    setCompareStatus("");
+  } catch (err) {
+    setCompareStatus(err.message || "Comparison failed", true);
+  } finally {
+    compareRun.disabled = false;
+  }
+}
+
+compareAddTarget.addEventListener("click", createTargetRow);
+compareRun.addEventListener("click", runComparison);
+
+createTargetRow();

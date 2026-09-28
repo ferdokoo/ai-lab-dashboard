@@ -700,3 +700,287 @@ body {
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+.cost {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+}
+
+.cost-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.cost-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.cost-body {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.cost-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.cost-controls label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.cost-controls select,
+.cost-controls input {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.cost-controls button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.cost-controls button:hover {
+  background: #20242f;
+}
+
+.cost-status {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.cost-status.error {
+  color: var(--red);
+}
+
+.cost-result {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cost-estimate {
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.cost-detail {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.compare {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+}
+
+.compare-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.compare-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.compare-body {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.compare-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.compare-targets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.compare-target-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.compare-target-row label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.compare-target-row select {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.compare-target-row button {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.compare-target-row button:hover {
+  background: #20242f;
+}
+
+.compare-add {
+  align-self: flex-start;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.compare-add:hover {
+  background: #20242f;
+}
+
+.compare-prompt {
+  width: 100%;
+  resize: vertical;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.compare-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.compare-actions button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.compare-actions button:hover {
+  background: #20242f;
+}
+
+.compare-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.compare-status {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.compare-status.error {
+  color: var(--red);
+}
+
+.compare-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.compare-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.compare-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.compare-card .compare-card-model {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.compare-badges {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.compare-badges b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.compare-card pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.compare-card.error-card {
+  border-color: var(--red);
+}
+
+.compare-card .compare-card-error {
+  margin: 0;
+  color: var(--red);
+  font-size: 0.85rem;
+}

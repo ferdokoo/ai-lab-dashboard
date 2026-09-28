@@ -18,7 +18,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from .. import cache, requestlog
+from .. import cost, requestlog
 from ..providers import PROVIDERS
 from ..providers.base import ProviderError
 
@@ -69,14 +69,14 @@ async def provider_request(provider: str, body: RequestBody) -> dict[str, Any]:
 
     prompt_tokens = result.get("prompt_tokens")
     completion_tokens = result.get("completion_tokens")
-    cost = await _estimate_cost(name, model, prompt_tokens, completion_tokens)
+    cost_usd = await cost.estimate_cost(name, model, prompt_tokens, completion_tokens)
 
     await requestlog.log_request(
         provider=name,
         model=model,
         prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
-        estimated_cost_usd=cost,
+        estimated_cost_usd=cost_usd,
         latency_ms=result.get("latency_ms"),
         kind=requestlog.KIND_TEXT,
     )
@@ -88,7 +88,7 @@ async def provider_request(provider: str, body: RequestBody) -> dict[str, Any]:
         "prompt_tokens": prompt_tokens,
         "completion_tokens": completion_tokens,
         "latency_ms": result.get("latency_ms"),
-        "estimated_cost_usd": cost,
+        "estimated_cost_usd": cost_usd,
     }
 
 
@@ -159,31 +159,3 @@ async def _log_failure(
         latency_ms=latency_ms,
         kind=kind,
     )
-
-
-async def _estimate_cost(
-    provider: str,
-    model: str,
-    prompt_tokens: int | None,
-    completion_tokens: int | None,
-) -> float | None:
-    """Estimate USD cost from the cached catalog pricing, or ``None`` when unknown."""
-    if prompt_tokens is None or completion_tokens is None:
-        return None
-
-    models = await cache.get_catalog(provider) or []
-    entry = next((m for m in models if m.get("id") == model), None)
-    if entry is None:
-        return None
-
-    input_price = entry.get("input_price_per_million")
-    output_price = entry.get("output_price_per_million")
-    if input_price is None and output_price is None:
-        return None
-
-    cost = 0.0
-    if input_price is not None:
-        cost += prompt_tokens / 1_000_000 * input_price
-    if output_price is not None:
-        cost += completion_tokens / 1_000_000 * output_price
-    return round(cost, 8)
