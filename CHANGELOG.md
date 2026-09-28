@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-09-28
+- feat: Implement Balance & Usage Panel with provider integration and UI (d2a6e4f)
+- feat: Add plan, requirements, and validation for Balance & Usage Panel (273b1ea)
+- Update changelog (6c5529e)
 - feat: Implement local inference providers for Ollama and LM Studio with configuration and tests (4ecdc71)
 - feat: Add plans, requirements, and validation for local inference with Ollama and LM Studio (b222c93)
 
