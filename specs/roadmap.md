@@ -64,7 +64,7 @@ _Goal:_ Estimate costs before running and compare model outputs side by side.
 - `POST /api/broadcast` — fan-out to selected models in parallel, collect results
 - Frontend: model multi-select, side-by-side response cards with cost + latency badges
 
-## Phase 9 — Polish
+## Phase 9 — Polish _complete_
 _Goal:_ Make the dashboard comfortable for daily use.
 - Dark theme (CSS custom properties, toggle persisted in `localStorage`)
 - Chart.js panel: tokens and estimated spend over time (daily/weekly aggregation from history log)

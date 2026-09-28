@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-09-28
+- Refactor frontend layout and implement dark theme support (445862f)
+- feat: add plan, requirements, and validation for Phase 9 polish (b12b756)
+- Update changelog (549a9b6)
 - feat: add cost calculator and compare mode functionality (f999a0b)
 - feat: Add plan, requirements, and validation for Cost Tools & Compare Mode (0167889)
 - Update changelog (2977ac3)
