@@ -25,10 +25,15 @@ _DEFAULT_REQUEST_TIMEOUT = 120.0
 
 class OpenAIProvider(BaseProvider):
     name = "openai"
+    billing_url = "https://platform.openai.com/settings/organization/billing/overview"
 
     @property
     def api_key(self) -> str | None:
         return settings.openai_api_key
+
+    async def balance(self) -> None:
+        """OpenAI exposes no account-balance endpoint via its API."""
+        return None
 
     async def _probe(self, client: httpx.AsyncClient) -> httpx.Response:
         return await client.get(

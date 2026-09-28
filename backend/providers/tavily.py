@@ -16,13 +16,15 @@ from typing import Any
 import httpx
 
 from ..config import settings
-from .base import BaseProvider, ProviderError, request_result
+from .base import BaseProvider, ProviderError, balance_result, request_result
 
 _SEARCH_URL = "https://api.tavily.com/search"
+_USAGE_URL = "https://api.tavily.com/usage"
 
 
 class TavilyProvider(BaseProvider):
     name = "tavily"
+    billing_url = "https://app.tavily.com/"
 
     @property
     def api_key(self) -> str | None:
@@ -38,6 +40,40 @@ class TavilyProvider(BaseProvider):
     async def models(self) -> list[dict[str, Any]]:
         """Tavily is a search tool and exposes no model catalog."""
         return []
+
+    async def balance(self) -> dict[str, Any]:
+        if not self.api_key:
+            raise ProviderError(f"No {self.name} API key configured", status_code=401)
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(
+                    _USAGE_URL,
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                )
+        except httpx.TimeoutException as exc:
+            raise ProviderError("Request timed out", status_code=504) from exc
+        except httpx.RequestError as exc:
+            raise ProviderError(f"Request failed: {exc}", status_code=502) from exc
+
+        if response.status_code >= 300:
+            if response.status_code == 401:
+                raise ProviderError("Invalid API key", status_code=401)
+            raise ProviderError(_response_detail(response), status_code=502)
+
+        data = response.json() or {}
+        key_usage = data.get("key") or {}
+        account = data.get("account") or {}
+        return balance_result(
+            fields={
+                "plan": account.get("plan"),
+                "key_usage": key_usage.get("usage"),
+                "key_limit": key_usage.get("limit"),
+                "account_usage": account.get("usage"),
+                "account_limit": account.get("limit"),
+            },
+            raw=data,
+        )
 
     async def search(
         self,

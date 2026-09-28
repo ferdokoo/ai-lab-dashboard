@@ -68,6 +68,12 @@ class BaseProvider:
     #: providers set this ``False`` — their models have no public pricing.
     resolve_pricing: bool = True
 
+    #: Link to the provider's billing/usage page.  Surfaced by the balance
+    #: panel for providers that expose no balance via their API, so the user
+    #: can check spend directly on the provider's site.  ``None`` for local
+    #: providers (no remote billing page).
+    billing_url: str | None = None
+
     @property
     def api_key(self) -> str | None:
         """Return the provider API key from config, or ``None`` if unset."""
@@ -144,7 +150,18 @@ class BaseProvider:
         return response
 
     async def balance(self) -> dict[str, Any] | None:
-        """Return balance/usage info, or ``None`` when the provider doesn't expose it."""
+        """Return balance/usage info, or ``None`` when the provider doesn't expose it.
+
+        Providers whose API surfaces credit/usage data return the shape built
+        by :func:`balance_result` — a normalized ``fields`` mapping plus an
+        optional ``raw`` payload of the provider's original response::
+
+            {"fields": {...}, "raw": {...}}
+
+        Providers with no balance endpoint (OpenAI, Anthropic, Gemini) and
+        local providers (Ollama, LM Studio) return ``None``, which the router
+        turns into an honest "not available via API" response.
+        """
         raise NotImplementedError
 
     async def request(
@@ -200,3 +217,16 @@ def model_entry(
         "output_price_per_million": output_price_per_million,
         "pricing_source": pricing_source,
     }
+
+
+def balance_result(fields: dict[str, Any], raw: Any = None) -> dict[str, Any]:
+    """Build the normalized balance/usage response dict.
+
+    ``fields`` holds the normalized, provider-agnostic values the UI renders;
+    ``raw`` (optional) carries the provider's original response for any
+    provider-specific detail.
+    """
+    result: dict[str, Any] = {"fields": fields}
+    if raw is not None:
+        result["raw"] = raw
+    return result

@@ -33,6 +33,10 @@ class LMStudioProvider(BaseProvider):
     def base_url(self) -> str:
         return (settings.lmstudio_base_url or _DEFAULT_BASE_URL).rstrip("/")
 
+    async def balance(self) -> None:
+        """Local providers have no remote balance or billing to report."""
+        return None
+
     async def _probe(self, client: httpx.AsyncClient) -> httpx.Response:
         return await client.get(f"{self.base_url}/models")
 

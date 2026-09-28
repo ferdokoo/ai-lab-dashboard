@@ -23,10 +23,15 @@ _MODELS_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 class GeminiProvider(BaseProvider):
     name = "gemini"
+    billing_url = "https://console.cloud.google.com/billing"
 
     @property
     def api_key(self) -> str | None:
         return settings.gemini_api_key
+
+    async def balance(self) -> None:
+        """Gemini exposes no account-balance endpoint via its API."""
+        return None
 
     async def _probe(self, client: httpx.AsyncClient) -> httpx.Response:
         return await client.get(_MODELS_URL, params={"key": self.api_key})

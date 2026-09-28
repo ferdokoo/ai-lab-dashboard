@@ -410,3 +410,151 @@ runnerClear.addEventListener("click", () => {
 populateRunnerProviders();
 syncRunnerMode();
 loadRunnerModels(false);
+
+const balanceGrid = document.getElementById("balance-grid");
+const balanceRefreshAll = document.getElementById("balance-refresh");
+
+const balanceProviders = [...document.querySelectorAll(".card")]
+  .filter((card) => card.dataset.balance !== "false")
+  .map((card) => card.dataset.provider)
+  .filter(Boolean);
+
+function humanizeKey(key) {
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatBalanceValue(value) {
+  if (value == null) return "—";
+  if (typeof value === "number") {
+    return value.toLocaleString(undefined, {
+      maximumFractionDigits: 6,
+    });
+  }
+  return String(value);
+}
+
+function buildBalanceCard(provider) {
+  const card = document.createElement("article");
+  card.className = "balance-card";
+  card.dataset.provider = provider;
+
+  const name = provider[0].toUpperCase() + provider.slice(1);
+
+  const top = document.createElement("div");
+  top.className = "balance-card-top";
+
+  const title = document.createElement("h3");
+  title.textContent = name;
+  top.appendChild(title);
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = "Refresh";
+  button.addEventListener("click", () => loadBalance(provider, card));
+  top.appendChild(button);
+
+  const body = document.createElement("div");
+  body.className = "balance-body";
+
+  card.append(top, body);
+  return card;
+}
+
+function renderBalanceCard(card, data) {
+  const body = card.querySelector(".balance-body");
+  body.innerHTML = "";
+
+  if (data.supported) {
+    const fields = document.createElement("div");
+    fields.className = "balance-fields";
+    Object.entries(data.fields || {}).forEach(([key, value]) => {
+      const row = document.createElement("div");
+      row.className = "balance-field";
+
+      const label = document.createElement("span");
+      label.className = "key";
+      label.textContent = humanizeKey(key);
+
+      const val = document.createElement("span");
+      val.className = "value";
+      val.textContent = formatBalanceValue(value);
+
+      row.append(label, val);
+      fields.appendChild(row);
+    });
+    body.appendChild(fields);
+
+    if (data.raw) {
+      const details = document.createElement("details");
+      details.className = "balance-raw";
+      const summary = document.createElement("summary");
+      summary.textContent = "Raw response";
+      const pre = document.createElement("pre");
+      pre.textContent = JSON.stringify(data.raw, null, 2);
+      details.append(summary, pre);
+      body.appendChild(details);
+    }
+    return;
+  }
+
+  const message = document.createElement("p");
+  message.className = "balance-message";
+  message.textContent = data.message || "Not available";
+  body.appendChild(message);
+
+  if (data.billing_url) {
+    const link = document.createElement("a");
+    link.className = "balance-link";
+    link.href = data.billing_url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "View billing page";
+    body.appendChild(link);
+  }
+}
+
+async function loadBalance(provider, card) {
+  const body = card.querySelector(".balance-body");
+  body.innerHTML = "";
+  const loading = document.createElement("p");
+  loading.className = "balance-message";
+  loading.textContent = "Loading…";
+  body.appendChild(loading);
+
+  try {
+    const response = await fetch(`/api/${provider}/balance`);
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (_) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    if (!response.ok) {
+      throw new Error(data.detail || `HTTP ${response.status}`);
+    }
+
+    renderBalanceCard(card, data);
+  } catch (err) {
+    body.innerHTML = "";
+    const message = document.createElement("p");
+    message.className = "balance-message error";
+    message.textContent = err.message || "Failed to load balance";
+    body.appendChild(message);
+  }
+}
+
+balanceProviders.forEach((provider) => {
+  const card = buildBalanceCard(provider);
+  balanceGrid.appendChild(card);
+  loadBalance(provider, card);
+});
+
+balanceRefreshAll.addEventListener("click", () => {
+  balanceGrid.querySelectorAll(".balance-card").forEach((card) => {
+    loadBalance(card.dataset.provider, card);
+  });
+});

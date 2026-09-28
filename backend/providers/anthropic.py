@@ -25,10 +25,15 @@ _DEFAULT_REQUEST_TIMEOUT = 120.0
 
 class AnthropicProvider(BaseProvider):
     name = "anthropic"
+    billing_url = "https://console.anthropic.com/settings/billing"
 
     @property
     def api_key(self) -> str | None:
         return settings.anthropic_api_key
+
+    async def balance(self) -> None:
+        """Anthropic exposes no account-balance endpoint via its API."""
+        return None
 
     async def _probe(self, client: httpx.AsyncClient) -> httpx.Response:
         return await client.get(

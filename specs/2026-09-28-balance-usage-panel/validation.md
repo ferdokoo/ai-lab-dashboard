@@ -1,11 +1,12 @@
 # Validation: Balance & Usage Panel
 
 ## Acceptance Criteria
-- [ ] Every provider implements `balance()`, returning real data (OpenRouter, Tavily) or `None` (OpenAI, Anthropic, Gemini)
+- [ ] Every provider implements `balance()`, returning real data (OpenRouter, Tavily) or `None` (OpenAI, Anthropic, Gemini, Ollama, LM Studio)
 - [ ] `GET /api/{provider}/balance` returns a normalized payload for supported providers and an explicit "not available via API" state for the rest
 - [ ] OpenRouter balance uses the management key and reports a clear error when only the inference key is configured
 - [ ] Tavily balance surfaces per-key and account-plan usage
 - [ ] Frontend balance panel shows real numbers where available and an honest "not available via API" message + billing link elsewhere (no placeholders or guesses)
+- [ ] Ollama and LM Studio are not shown in the balance panel (local providers have nothing to report)
 
 ## Test Coverage
 - [ ] pytest: OpenRouter balance with management key (mocked response) returns normalized fields
@@ -20,7 +21,8 @@
 2. Remove `OPENROUTER_MANAGEMENT_KEY` (keep inference key), restart — OpenRouter shows "management key not configured" without erroring.
 3. Set `TAVILY_API_KEY` and open the Tavily panel — per-key and plan usage render.
 4. With OpenAI/Anthropic/Gemini keys set, open their panels — each shows "not available via API" plus a working link to the provider's billing page, and per-request token totals where applicable.
-5. Confirm no provider shows a guessed or zeroed balance.
+5. Confirm Ollama and LM Studio do not appear in the balance panel.
+6. Confirm no provider shows a guessed or zeroed balance.
 
 ## Edge Cases
 - Management key present but expired/invalid (HTTP error from OpenRouter)

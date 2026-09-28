@@ -64,7 +64,7 @@
         <button type="button" data-role="check">Check</button>
       </article>
 
-      <article class="card" data-provider="ollama">
+      <article class="card" data-provider="ollama" data-balance="false">
         <h2>Ollama</h2>
         <div class="indicators">
           <span class="status" data-role="status"></span>
@@ -74,7 +74,7 @@
         <button type="button" data-role="check">Check</button>
       </article>
 
-      <article class="card" data-provider="lmstudio">
+      <article class="card" data-provider="lmstudio" data-balance="false">
         <h2>LM Studio</h2>
         <div class="indicators">
           <span class="status" data-role="status"></span>
@@ -83,6 +83,14 @@
         <p class="error" data-role="error"></p>
         <button type="button" data-role="check">Check</button>
       </article>
+    </section>
+
+    <section class="balance" id="balance-panel">
+      <header class="balance-header">
+        <h2>Balance &amp; Usage</h2>
+        <button type="button" id="balance-refresh">Refresh all</button>
+      </header>
+      <div class="balance-grid" id="balance-grid"></div>
     </section>
 
     <section class="catalog" id="model-catalog">
