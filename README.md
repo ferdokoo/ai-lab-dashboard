@@ -94,3 +94,23 @@ ai-lab-dashboard/
 - The server binds to `127.0.0.1` only and is not intended for network exposure.
 - API keys live in `.env` (gitignored) and never leave the machine.
 - The request log stores timestamps, provider, model, token counts, estimated cost, and latency — not full prompt/response bodies by default.
+
+## Security
+
+This tool is designed for **local use only**. Several deliberate trade-offs reflect that:
+
+- **No authentication.** There is no login or API token. Anyone who can reach port 8000 can proxy requests through your API keys.
+- **`GET /api/keys` is unauthenticated.** It returns the last four characters of each configured key to confirm presence — this is intentional for local convenience but would be a leak on a shared host.
+- **The `options` field on request/broadcast endpoints is passed through to provider SDKs without an allowlist.** This is intentional flexibility for a lab tool but could trigger unexpected spend if the server were exposed.
+
+### If you choose to expose this on a network
+
+Do **not** run this on a public IP or shared machine without adding all of the following:
+
+1. **Reverse proxy with authentication** (e.g. nginx + HTTP Basic Auth, or Authelia) in front of uvicorn. Never expose uvicorn directly.
+2. **TLS** — keys must not travel over plain HTTP outside localhost.
+3. **Firewall** — restrict port access to trusted IPs only.
+4. **Change the bind address** in `launch.bat` / your uvicorn command from `--host 127.0.0.1` to the specific interface you intend to serve, never `0.0.0.0` on a machine with a public interface.
+5. **Review the `/api/keys` endpoint** — consider removing the `masked` field or removing the route entirely.
+
+The built-in CORS policy already restricts cross-origin browser requests to the dashboard's own origin (`127.0.0.1:8000` / `localhost:8000`). If you change the host or port, update `allow_origins` in `backend/main.py` to match.

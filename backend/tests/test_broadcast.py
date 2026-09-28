@@ -183,6 +183,14 @@ def test_broadcast_empty_targets_returns_400(client):
     assert response.status_code == 400
 
 
+def test_broadcast_too_many_targets_returns_400(client):
+    """broadcast rejects more than 10 targets"""
+    targets = [{"provider": "openai", "model": f"m{i}"} for i in range(11)]
+    response = client.post("/api/broadcast", json={"prompt": "hi", "targets": targets})
+    assert response.status_code == 400
+    assert "10" in response.json()["detail"]
+
+
 def test_broadcast_logs_counts_and_cost_never_bodies(client, monkeypatch, tmp_db):
     """broadcast logs counts/latency/cost only, never prompt or response bodies"""
     monkeypatch.setitem(

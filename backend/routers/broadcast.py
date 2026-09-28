@@ -37,6 +37,9 @@ class BroadcastBody(BaseModel):
     options: dict[str, Any] = Field(default_factory=dict)
 
 
+_MAX_TARGETS = 10
+
+
 @router.post("/broadcast")
 async def broadcast(body: BroadcastBody) -> dict[str, Any]:
     """Fan out one prompt to every target concurrently and collect results."""
@@ -44,6 +47,11 @@ async def broadcast(body: BroadcastBody) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
     if not body.targets:
         raise HTTPException(status_code=400, detail="At least one target is required")
+    if len(body.targets) > _MAX_TARGETS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Too many targets: maximum is {_MAX_TARGETS}",
+        )
 
     results = await asyncio.gather(
         *(_run_target(target, body.prompt, body.options) for target in body.targets)
