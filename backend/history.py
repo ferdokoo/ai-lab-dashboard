@@ -8,6 +8,7 @@ prompt/response body column (mission principle 3).
 from __future__ import annotations
 
 import csv
+from datetime import datetime
 from io import StringIO
 from typing import Any
 
@@ -112,3 +113,52 @@ async def export_csv(
     for row in rows:
         writer.writerow([row[field] for field in _FIELDS])
     return buffer.getvalue()
+
+
+def _bucket(timestamp: str, group: str) -> str:
+    """Reduce an ISO timestamp to a ``day`` or ``week`` bucket label."""
+    if group == "week":
+        dt = datetime.fromisoformat(timestamp)
+        return dt.strftime("%G-W%V")
+    return timestamp[:10]
+
+
+async def query_usage(
+    group: str = "day",
+    provider: str | None = None,
+    model: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
+) -> dict[str, Any]:
+    """Aggregate total tokens and estimated spend per day or week.
+
+    Sums ``prompt_tokens + completion_tokens`` and ``estimated_cost_usd`` across
+    matching rows, bucketed by timestamp.  ``None`` token/cost values simply
+    contribute zero (Tavily searches count no tokens and little/no cost).
+    Returns buckets in chronological order so the frontend can chart them.
+    """
+    await db.ensure_schema()
+    where, params = _build_where(provider, model, start, end)
+
+    async with aiosqlite.connect(db.DB_PATH) as conn:
+        conn.row_factory = aiosqlite.Row
+        cursor = await conn.execute(
+            "SELECT timestamp, prompt_tokens, completion_tokens, estimated_cost_usd "
+            f"FROM requests {where} ORDER BY id ASC",
+            params,
+        )
+        rows = await cursor.fetchall()
+
+    buckets: dict[str, dict[str, float]] = {}
+    for row in rows:
+        key = _bucket(row["timestamp"], group)
+        entry = buckets.setdefault(key, {"tokens": 0, "cost": 0.0})
+        entry["tokens"] += (row["prompt_tokens"] or 0) + (row["completion_tokens"] or 0)
+        if row["estimated_cost_usd"] is not None:
+            entry["cost"] += row["estimated_cost_usd"]
+
+    points = [
+        {"bucket": key, "tokens": int(value["tokens"]), "cost": round(value["cost"], 8)}
+        for key, value in sorted(buckets.items())
+    ]
+    return {"group": group, "points": points}

@@ -9,8 +9,9 @@ cheapest read-only call that lists pulled models.  ``request()`` posts to
 """
 from __future__ import annotations
 
+import json
 import time
-from typing import Any
+from typing import Any, AsyncIterator
 
 import httpx
 
@@ -78,6 +79,53 @@ class OllamaProvider(BaseProvider):
             completion_tokens=data.get("eval_count"),
             latency_ms=latency_ms,
         )
+
+    async def stream(
+        self,
+        model: str,
+        prompt: str,
+        options: dict[str, Any] | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        payload: dict[str, Any] = {"model": model, "prompt": prompt, "stream": True}
+        payload.update(options or {})
+
+        try:
+            async with httpx.AsyncClient(timeout=_GENERATE_TIMEOUT) as client:
+                async with client.stream(
+                    "POST", f"{self.base_url}/api/generate", json=payload
+                ) as response:
+                    if response.status_code >= 300:
+                        if response.status_code == 404:
+                            raise ProviderError("Model not found", status_code=404)
+                        raise ProviderError(
+                            f"HTTP {response.status_code}", status_code=502
+                        )
+                    prompt_tokens: int | None = None
+                    completion_tokens: int | None = None
+                    async for line in response.aiter_lines():
+                        if not line:
+                            continue
+                        try:
+                            chunk = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        if chunk.get("done"):
+                            prompt_tokens = chunk.get("prompt_eval_count")
+                            completion_tokens = chunk.get("eval_count")
+                            break
+                        content = chunk.get("response") or ""
+                        if content:
+                            yield {"type": "delta", "content": content}
+        except httpx.TimeoutException as exc:
+            raise ProviderError("Request timed out", status_code=504) from exc
+        except httpx.RequestError as exc:
+            raise ProviderError(f"Connection failed: {exc}", status_code=502) from exc
+
+        yield {
+            "type": "done",
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+        }
 
 
 provider = OllamaProvider()

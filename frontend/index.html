@@ -8,272 +8,332 @@
 </head>
 <body>
   <header class="page-header">
-    <h1>AI Lab Dashboard</h1>
+    <div class="page-header-top">
+      <h1>AI Lab Dashboard</h1>
+      <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Toggle dark theme">Theme</button>
+    </div>
     <p>Provider health checks · model catalog · request runner</p>
+
+    <nav class="nav" aria-label="Primary">
+      <a href="#home" class="nav-link" data-page="home">Home</a>
+      <a href="#catalogue" class="nav-link" data-page="catalogue">Catalogue</a>
+      <a href="#runner" class="nav-link" data-page="runner">Runner</a>
+      <a href="#history" class="nav-link" data-page="history">History</a>
+    </nav>
   </header>
 
   <main>
-    <section class="grid" id="providers">
-      <article class="card" data-provider="openai">
-        <h2>OpenAI</h2>
-        <div class="indicators">
-          <span class="status" data-role="status"></span>
-          <span class="latency" data-role="latency"></span>
-        </div>
-        <p class="error" data-role="error"></p>
-        <button type="button" data-role="check">Check</button>
-      </article>
-
-      <article class="card" data-provider="anthropic">
-        <h2>Anthropic</h2>
-        <div class="indicators">
-          <span class="status" data-role="status"></span>
-          <span class="latency" data-role="latency"></span>
-        </div>
-        <p class="error" data-role="error"></p>
-        <button type="button" data-role="check">Check</button>
-      </article>
-
-      <article class="card" data-provider="gemini">
-        <h2>Gemini</h2>
-        <div class="indicators">
-          <span class="status" data-role="status"></span>
-          <span class="latency" data-role="latency"></span>
-        </div>
-        <p class="error" data-role="error"></p>
-        <button type="button" data-role="check">Check</button>
-      </article>
-
-      <article class="card" data-provider="openrouter">
-        <h2>OpenRouter</h2>
-        <div class="indicators">
-          <span class="status" data-role="status"></span>
-          <span class="latency" data-role="latency"></span>
-        </div>
-        <p class="error" data-role="error"></p>
-        <button type="button" data-role="check">Check</button>
-      </article>
-
-      <article class="card" data-provider="tavily" data-catalog="false">
-        <h2>Tavily</h2>
-        <div class="indicators">
-          <span class="status" data-role="status"></span>
-          <span class="latency" data-role="latency"></span>
-        </div>
-        <p class="error" data-role="error"></p>
-        <button type="button" data-role="check">Check</button>
-      </article>
-
-      <article class="card" data-provider="ollama" data-balance="false">
-        <h2>Ollama</h2>
-        <div class="indicators">
-          <span class="status" data-role="status"></span>
-          <span class="latency" data-role="latency"></span>
-        </div>
-        <p class="error" data-role="error"></p>
-        <button type="button" data-role="check">Check</button>
-      </article>
-
-      <article class="card" data-provider="lmstudio" data-balance="false">
-        <h2>LM Studio</h2>
-        <div class="indicators">
-          <span class="status" data-role="status"></span>
-          <span class="latency" data-role="latency"></span>
-        </div>
-        <p class="error" data-role="error"></p>
-        <button type="button" data-role="check">Check</button>
-      </article>
-    </section>
-
-    <section class="balance" id="balance-panel">
-      <header class="balance-header">
-        <h2>Balance &amp; Usage</h2>
-        <button type="button" id="balance-refresh">Refresh all</button>
-      </header>
-      <div class="balance-grid" id="balance-grid"></div>
-    </section>
-
-    <section class="catalog" id="model-catalog">
-      <header class="catalog-header">
-        <h2>Model Catalog</h2>
-        <button type="button" class="catalog-toggle" id="catalog-toggle" aria-expanded="true">Hide</button>
-      </header>
-
-      <div class="catalog-body" id="catalog-body">
-        <div class="catalog-controls">
-          <label for="provider-select">Provider</label>
-          <select id="provider-select"></select>
-          <button type="button" class="catalog-refresh" id="catalog-refresh">Refresh</button>
-          <span class="catalog-status" id="catalog-status"></span>
-        </div>
-
-        <div class="table-wrap">
-          <table id="catalog-table">
-            <thead>
-              <tr>
-                <th data-key="id" class="sortable">Model ID</th>
-                <th data-key="context_window" class="sortable">Context Window</th>
-                <th data-key="input_price_per_million" class="sortable">Input $/1M</th>
-                <th data-key="output_price_per_million" class="sortable">Output $/1M</th>
-              </tr>
-            </thead>
-            <tbody id="catalog-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <section class="runner" id="request-runner">
-      <header class="runner-header">
-        <h2>Request Runner</h2>
-      </header>
-
-      <div class="runner-body">
-        <div class="runner-controls">
-          <label for="runner-provider">Provider</label>
-          <select id="runner-provider"></select>
-
-          <label for="runner-model" id="runner-model-label">Model</label>
-          <select id="runner-model"></select>
-          <button type="button" class="runner-refresh" id="runner-models-refresh">Refresh</button>
-        </div>
-
-        <textarea
-          id="runner-prompt"
-          class="runner-prompt"
-          rows="6"
-          placeholder="Enter a prompt…"
-        ></textarea>
-
-        <div class="runner-actions">
-          <button type="button" id="runner-run">Run</button>
-          <span class="runner-status" id="runner-status"></span>
-        </div>
-
-        <div class="runner-output hidden" id="runner-output">
-          <div class="runner-metrics">
-            <span>prompt tokens: <b data-metric="prompt_tokens">—</b></span>
-            <span>completion tokens: <b data-metric="completion_tokens">—</b></span>
-            <span>latency: <b data-metric="latency_ms">—</b> ms</span>
-            <span class="runner-output-actions">
-              <button type="button" id="runner-copy">Copy</button>
-              <button type="button" id="runner-clear">Clear</button>
-            </span>
+    <section class="page" id="page-home">
+      <section class="grid" id="providers">
+        <article class="card" data-provider="openai">
+          <h2>OpenAI</h2>
+          <div class="indicators">
+            <span class="status" data-role="status"></span>
+            <span class="latency" data-role="latency"></span>
           </div>
-          <pre class="runner-text" id="runner-text"></pre>
-        </div>
-      </div>
+          <p class="error" data-role="error"></p>
+          <button type="button" data-role="check">Check</button>
+        </article>
+
+        <article class="card" data-provider="anthropic">
+          <h2>Anthropic</h2>
+          <div class="indicators">
+            <span class="status" data-role="status"></span>
+            <span class="latency" data-role="latency"></span>
+          </div>
+          <p class="error" data-role="error"></p>
+          <button type="button" data-role="check">Check</button>
+        </article>
+
+        <article class="card" data-provider="gemini">
+          <h2>Gemini</h2>
+          <div class="indicators">
+            <span class="status" data-role="status"></span>
+            <span class="latency" data-role="latency"></span>
+          </div>
+          <p class="error" data-role="error"></p>
+          <button type="button" data-role="check">Check</button>
+        </article>
+
+        <article class="card" data-provider="openrouter">
+          <h2>OpenRouter</h2>
+          <div class="indicators">
+            <span class="status" data-role="status"></span>
+            <span class="latency" data-role="latency"></span>
+          </div>
+          <p class="error" data-role="error"></p>
+          <button type="button" data-role="check">Check</button>
+        </article>
+
+        <article class="card" data-provider="tavily" data-catalog="false">
+          <h2>Tavily</h2>
+          <div class="indicators">
+            <span class="status" data-role="status"></span>
+            <span class="latency" data-role="latency"></span>
+          </div>
+          <p class="error" data-role="error"></p>
+          <button type="button" data-role="check">Check</button>
+        </article>
+
+        <article class="card" data-provider="ollama" data-balance="false">
+          <h2>Ollama</h2>
+          <div class="indicators">
+            <span class="status" data-role="status"></span>
+            <span class="latency" data-role="latency"></span>
+          </div>
+          <p class="error" data-role="error"></p>
+          <button type="button" data-role="check">Check</button>
+        </article>
+
+        <article class="card" data-provider="lmstudio" data-balance="false">
+          <h2>LM Studio</h2>
+          <div class="indicators">
+            <span class="status" data-role="status"></span>
+            <span class="latency" data-role="latency"></span>
+          </div>
+          <p class="error" data-role="error"></p>
+          <button type="button" data-role="check">Check</button>
+        </article>
+      </section>
+
+      <section class="balance" id="balance-panel">
+        <header class="balance-header">
+          <h2>Balance &amp; Usage</h2>
+          <button type="button" id="balance-refresh">Refresh all</button>
+        </header>
+        <div class="balance-grid" id="balance-grid"></div>
+      </section>
+
+      <section class="keys" id="keys-panel">
+        <header class="keys-header">
+          <h2>Configured Keys</h2>
+          <button type="button" id="keys-refresh">Refresh</button>
+        </header>
+        <div class="keys-grid" id="keys-grid"></div>
+      </section>
     </section>
 
-    <section class="cost" id="cost-calculator">
-      <header class="cost-header">
-        <h2>Cost Calculator</h2>
-      </header>
+    <section class="page hidden" id="page-catalogue">
+      <section class="catalog" id="model-catalog">
+        <header class="catalog-header">
+          <h2>Model Catalog</h2>
+          <button type="button" class="catalog-toggle" id="catalog-toggle" aria-expanded="true">Hide</button>
+        </header>
 
-      <div class="cost-body">
-        <div class="cost-controls">
-          <label for="cost-provider">Provider</label>
-          <select id="cost-provider"></select>
+        <div class="catalog-body" id="catalog-body">
+          <div class="catalog-controls">
+            <label for="provider-select">Provider</label>
+            <select id="provider-select"></select>
+            <button type="button" class="catalog-refresh" id="catalog-refresh">Refresh</button>
+            <span class="catalog-status" id="catalog-status"></span>
+          </div>
 
-          <label for="cost-model">Model</label>
-          <select id="cost-model"></select>
-
-          <label for="cost-prompt-tokens">Prompt tokens</label>
-          <input type="number" id="cost-prompt-tokens" min="0" value="1000" />
-
-          <label for="cost-completion-tokens">Completion tokens</label>
-          <input type="number" id="cost-completion-tokens" min="0" value="500" />
-
-          <button type="button" id="cost-calculate">Estimate</button>
-          <span class="cost-status" id="cost-status"></span>
+          <div class="table-wrap">
+            <table id="catalog-table">
+              <thead>
+                <tr>
+                  <th data-key="id" class="sortable">Model ID</th>
+                  <th data-key="context_window" class="sortable">Context Window</th>
+                  <th data-key="input_price_per_million" class="sortable">Input $/1M</th>
+                  <th data-key="output_price_per_million" class="sortable">Output $/1M</th>
+                </tr>
+              </thead>
+              <tbody id="catalog-tbody"></tbody>
+            </table>
+          </div>
         </div>
+      </section>
 
-        <div class="cost-result" id="cost-result">
-          <span class="cost-estimate" id="cost-estimate">—</span>
-          <span class="cost-detail" id="cost-detail"></span>
+      <section class="cost" id="cost-calculator">
+        <header class="cost-header">
+          <h2>Cost Calculator</h2>
+        </header>
+
+        <div class="cost-body">
+          <div class="cost-controls">
+            <label for="cost-provider">Provider</label>
+            <select id="cost-provider"></select>
+
+            <label for="cost-model">Model</label>
+            <select id="cost-model"></select>
+
+            <label for="cost-prompt-tokens">Prompt tokens</label>
+            <input type="number" id="cost-prompt-tokens" min="0" value="1000" />
+
+            <label for="cost-completion-tokens">Completion tokens</label>
+            <input type="number" id="cost-completion-tokens" min="0" value="500" />
+
+            <button type="button" id="cost-calculate">Estimate</button>
+            <span class="cost-status" id="cost-status"></span>
+          </div>
+
+          <div class="cost-result" id="cost-result">
+            <span class="cost-estimate" id="cost-estimate">—</span>
+            <span class="cost-detail" id="cost-detail"></span>
+          </div>
         </div>
-      </div>
+      </section>
     </section>
 
-    <section class="compare" id="compare-mode">
-      <header class="compare-header">
-        <h2>Compare Mode</h2>
-      </header>
+    <section class="page hidden" id="page-runner">
+      <section class="runner" id="request-runner">
+        <header class="runner-header">
+          <h2>Request Runner</h2>
+        </header>
 
-      <div class="compare-body">
-        <div class="compare-controls">
-          <div class="compare-targets" id="compare-targets"></div>
-          <button type="button" class="compare-add" id="compare-add-target">+ Add model</button>
+        <div class="runner-body">
+          <div class="runner-controls">
+            <label for="runner-provider">Provider</label>
+            <select id="runner-provider"></select>
+
+            <label for="runner-model" id="runner-model-label">Model</label>
+            <select id="runner-model"></select>
+            <button type="button" class="runner-refresh" id="runner-models-refresh">Refresh</button>
+
+            <label for="runner-stream" class="runner-stream-label">
+              <input type="checkbox" id="runner-stream" />
+              Stream
+            </label>
+          </div>
 
           <textarea
-            id="compare-prompt"
-            class="compare-prompt"
-            rows="4"
-            placeholder="Enter a prompt to send to every selected model…"
+            id="runner-prompt"
+            class="runner-prompt"
+            rows="6"
+            placeholder="Enter a prompt…"
           ></textarea>
 
-          <div class="compare-actions">
-            <button type="button" id="compare-run">Run comparison</button>
-            <span class="compare-status" id="compare-status"></span>
+          <div class="runner-actions">
+            <button type="button" id="runner-run">Run</button>
+            <span class="runner-status" id="runner-status"></span>
+          </div>
+
+          <div class="runner-output hidden" id="runner-output">
+            <div class="runner-metrics">
+              <span>prompt tokens: <b data-metric="prompt_tokens">—</b></span>
+              <span>completion tokens: <b data-metric="completion_tokens">—</b></span>
+              <span>latency: <b data-metric="latency_ms">—</b> ms</span>
+              <span class="runner-output-actions">
+                <button type="button" id="runner-copy">Copy</button>
+                <button type="button" id="runner-clear">Clear</button>
+              </span>
+            </div>
+            <div class="runner-rate-limit hidden" id="runner-rate-limit">
+              <div class="runner-rate-limit-header">
+                <span>Rate limit headers</span>
+                <button type="button" id="runner-rate-limit-toggle" aria-expanded="true">Hide</button>
+              </div>
+              <div class="runner-rate-limit-body" id="runner-rate-limit-body"></div>
+            </div>
+            <pre class="runner-text" id="runner-text"></pre>
           </div>
         </div>
+      </section>
 
-        <div class="compare-results" id="compare-results"></div>
-      </div>
+      <section class="compare" id="compare-mode">
+        <header class="compare-header">
+          <h2>Compare Mode</h2>
+        </header>
+
+        <div class="compare-body">
+          <div class="compare-controls">
+            <div class="compare-targets" id="compare-targets"></div>
+            <button type="button" class="compare-add" id="compare-add-target">+ Add model</button>
+
+            <textarea
+              id="compare-prompt"
+              class="compare-prompt"
+              rows="4"
+              placeholder="Enter a prompt to send to every selected model…"
+            ></textarea>
+
+            <div class="compare-actions">
+              <button type="button" id="compare-run">Run comparison</button>
+              <span class="compare-status" id="compare-status"></span>
+            </div>
+          </div>
+
+          <div class="compare-results" id="compare-results"></div>
+        </div>
+      </section>
     </section>
 
-    <section class="history" id="history">
-      <header class="history-header">
-        <h2>History</h2>
-        <button type="button" id="history-export">Export CSV</button>
-      </header>
-
-      <div class="history-body">
-        <div class="history-controls">
-          <label for="history-provider">Provider</label>
-          <select id="history-provider">
-            <option value="">All</option>
-          </select>
-
-          <label for="history-model">Model</label>
-          <input type="text" id="history-model" placeholder="Exact model id" />
-
-          <label for="history-start">From</label>
-          <input type="date" id="history-start" />
-
-          <label for="history-end">To</label>
-          <input type="date" id="history-end" />
-
-          <button type="button" class="history-refresh" id="history-refresh">Refresh</button>
-          <span class="history-status" id="history-status"></span>
+    <section class="page hidden" id="page-history">
+      <section class="usage" id="usage-panel">
+        <header class="usage-header">
+          <h2>Usage Over Time</h2>
+          <div class="usage-controls">
+            <label for="usage-group">Group by</label>
+            <select id="usage-group">
+              <option value="day">Day</option>
+              <option value="week">Week</option>
+            </select>
+          </div>
+        </header>
+        <div class="usage-body">
+          <div class="usage-chart-wrap">
+            <canvas id="usage-chart"></canvas>
+          </div>
+          <p class="usage-empty hidden" id="usage-empty">No usage recorded yet — run a request to see the chart.</p>
         </div>
+      </section>
 
-        <div class="table-wrap">
-          <table id="history-table">
-            <thead>
-              <tr>
-                <th data-key="timestamp" class="sortable">Timestamp</th>
-                <th data-key="provider" class="sortable">Provider</th>
-                <th data-key="model" class="sortable">Model</th>
-                <th data-key="prompt_tokens" class="sortable">Prompt Tokens</th>
-                <th data-key="completion_tokens" class="sortable">Completion Tokens</th>
-                <th data-key="estimated_cost_usd" class="sortable">Cost</th>
-                <th data-key="latency_ms" class="sortable">Latency</th>
-              </tr>
-            </thead>
-            <tbody id="history-tbody"></tbody>
-          </table>
-        </div>
+      <section class="history" id="history">
+        <header class="history-header">
+          <h2>History</h2>
+          <button type="button" id="history-export">Export CSV</button>
+        </header>
 
-        <div class="history-pagination">
-          <button type="button" id="history-prev" disabled>Previous</button>
-          <span id="history-page-info"></span>
-          <button type="button" id="history-next" disabled>Next</button>
+        <div class="history-body">
+          <div class="history-controls">
+            <label for="history-provider">Provider</label>
+            <select id="history-provider">
+              <option value="">All</option>
+            </select>
+
+            <label for="history-model">Model</label>
+            <input type="text" id="history-model" placeholder="Exact model id" />
+
+            <label for="history-start">From</label>
+            <input type="date" id="history-start" />
+
+            <label for="history-end">To</label>
+            <input type="date" id="history-end" />
+
+            <button type="button" class="history-refresh" id="history-refresh">Refresh</button>
+            <span class="history-status" id="history-status"></span>
+          </div>
+
+          <div class="table-wrap">
+            <table id="history-table">
+              <thead>
+                <tr>
+                  <th data-key="timestamp" class="sortable">Timestamp</th>
+                  <th data-key="provider" class="sortable">Provider</th>
+                  <th data-key="model" class="sortable">Model</th>
+                  <th data-key="prompt_tokens" class="sortable">Prompt Tokens</th>
+                  <th data-key="completion_tokens" class="sortable">Completion Tokens</th>
+                  <th data-key="estimated_cost_usd" class="sortable">Cost</th>
+                  <th data-key="latency_ms" class="sortable">Latency</th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="history-pagination">
+            <button type="button" id="history-prev" disabled>Previous</button>
+            <span id="history-page-info"></span>
+            <button type="button" id="history-next" disabled>Next</button>
+          </div>
         </div>
-      </div>
+      </section>
     </section>
   </main>
 
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script src="/static/chart.umd.min.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

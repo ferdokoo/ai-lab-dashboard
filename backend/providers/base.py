@@ -28,7 +28,7 @@ provider overrides.
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import Any, AsyncIterator
 
 import httpx
 
@@ -181,6 +181,25 @@ class BaseProvider:
         """Run a search query and return result text (token metrics ``None``)."""
         raise NotImplementedError
 
+    async def stream(
+        self,
+        model: str,
+        prompt: str,
+        options: dict[str, Any] | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Stream a completion, yielding normalized event dicts.
+
+        Yields:
+            * ``{"type": "delta", "content": str}`` — one incremental text chunk.
+            * ``{"type": "done", "prompt_tokens": int|None,
+                "completion_tokens": int|None}`` — final event, once, last.
+
+        Raises :class:`NotImplementedError` by default; providers that support
+        streaming override this.  The router falls back to a single non-streamed
+        response for providers that do not.
+        """
+        raise NotImplementedError
+
 
 def _result(status: str, latency_ms: int | None, error: str | None) -> dict[str, Any]:
     """Build the normalized health response dict."""
@@ -192,14 +211,43 @@ def request_result(
     prompt_tokens: int | None,
     completion_tokens: int | None,
     latency_ms: int,
+    rate_limit: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Build the normalized request response dict."""
-    return {
+    result: dict[str, Any] = {
         "text": text,
         "prompt_tokens": prompt_tokens,
         "completion_tokens": completion_tokens,
         "latency_ms": latency_ms,
     }
+    if rate_limit is not None:
+        result["rate_limit"] = rate_limit
+    return result
+
+
+def extract_rate_limits(headers: Any) -> dict[str, str] | None:
+    """Pull ``x-ratelimit-*`` headers out of an HTTP header mapping.
+
+    Accepts ``httpx.Headers`` or any ``.items()`` mapping and returns a dict
+    keyed by the original header name, excluding case differences.  Returns
+    ``None`` when no rate-limit headers are present (honest-data principle).
+    """
+    result: dict[str, str] = {}
+    items = headers.items() if hasattr(headers, "items") else []
+    for name, value in items:
+        if str(name).lower().startswith("x-ratelimit"):
+            result[str(name)] = str(value)
+    return result or None
+
+
+def mask_key(key: str | None) -> str | None:
+    """Mask an API key down to its last four characters (``••••abcd``).
+
+    Returns ``None`` when no key is supplied.  The full key is never included.
+    """
+    if not key:
+        return None
+    return "••••" + key[-4:]
 
 
 def model_entry(

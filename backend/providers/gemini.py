@@ -11,7 +11,7 @@ arbitrary keyword arguments.
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import Any, AsyncIterator
 
 import httpx
 
@@ -85,6 +85,40 @@ class GeminiProvider(BaseProvider):
             completion_tokens=usage.candidates_token_count if usage else None,
             latency_ms=latency_ms,
         )
+
+    async def stream(
+        self,
+        model: str,
+        prompt: str,
+        options: dict[str, Any] | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        if not self.api_key:
+            raise ProviderError(f"No {self.name} API key configured", status_code=401)
+
+        from google import genai
+        from google.genai import types
+        from google.genai import errors as genai_errors
+
+        client = genai.Client(api_key=self.api_key)
+        config = types.GenerateContentConfig(**(options or {}))
+
+        try:
+            stream = await client.aio.models.generate_content_stream(
+                model=model,
+                contents=prompt,
+                config=config,
+            )
+            async for chunk in stream:
+                try:
+                    text = chunk.text
+                except Exception:
+                    continue
+                if text:
+                    yield {"type": "delta", "content": text}
+        except genai_errors.APIError as exc:
+            raise _gemini_api_error(exc) from exc
+
+        yield {"type": "done", "prompt_tokens": None, "completion_tokens": None}
 
 
 def _gemini_api_error(exc: Any) -> ProviderError:

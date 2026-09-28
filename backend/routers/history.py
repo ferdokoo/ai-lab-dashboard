@@ -21,6 +21,24 @@ from .. import history
 router = APIRouter(prefix="/api", tags=["history"])
 
 
+@router.get("/history/usage")
+async def get_history_usage(
+    group: str = Query(default="day", pattern="^(day|week)$"),
+    provider: str | None = None,
+    model: str | None = None,
+    start: date | None = None,
+    end: date | None = None,
+) -> dict[str, Any]:
+    """Return token and spend totals aggregated per day or week."""
+    return await history.query_usage(
+        group=group,
+        provider=provider.strip() if provider else None,
+        model=model.strip() if model else None,
+        start=start.isoformat() if start else None,
+        end=end.isoformat() if end else None,
+    )
+
+
 @router.get("/history")
 async def get_history(
     provider: str | None = None,

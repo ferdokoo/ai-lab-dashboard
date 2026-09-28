@@ -1,3 +1,62 @@
+const THEME_KEY = "theme";
+
+function showToast(message, isError = false) {
+  const container = document.getElementById("toast-container");
+  const toast = document.createElement("div");
+  toast.className = "toast" + (isError ? " error" : "");
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+function setButtonLoading(button, loading) {
+  if (loading) {
+    button.disabled = true;
+    button.dataset.original = button.textContent;
+    button.textContent = "";
+    const spinner = document.createElement("span");
+    spinner.className = "spinner";
+    button.appendChild(spinner);
+  } else {
+    button.disabled = false;
+    if (button.dataset.original != null) {
+      button.textContent = button.dataset.original;
+    }
+  }
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  const toggle = document.getElementById("theme-toggle");
+  toggle.textContent = theme === "dark" ? "Light mode" : "Dark mode";
+}
+
+function navigate() {
+  const pageId = (location.hash || "#home").slice(1) || "home";
+  const target =
+    document.getElementById("page-" + pageId) || document.getElementById("page-home");
+
+  document.querySelectorAll(".page").forEach((page) => page.classList.add("hidden"));
+  target.classList.remove("hidden");
+
+  document.querySelectorAll(".nav-link").forEach((link) => {
+    link.classList.toggle("active", link.dataset.page === target.id.replace("page-", ""));
+  });
+}
+
+window.addEventListener("hashchange", navigate);
+
+applyTheme(localStorage.getItem(THEME_KEY) || "light");
+
+document.getElementById("theme-toggle").addEventListener("click", () => {
+  const current = document.documentElement.getAttribute("data-theme");
+  const next = current === "dark" ? "light" : "dark";
+  applyTheme(next);
+  localStorage.setItem(THEME_KEY, next);
+});
+
+navigate();
+
 function setIndicator(card, state, { latency = null, message = "" } = {}) {
   const statusEl = card.querySelector('[data-role="status"]');
   const latencyEl = card.querySelector('[data-role="latency"]');
@@ -14,6 +73,7 @@ document.querySelectorAll(".card").forEach((card) => {
 
   button.addEventListener("click", async () => {
     setIndicator(card, "loading");
+    setButtonLoading(button, true);
 
     try {
       const response = await fetch(`/api/${provider}/health`);
@@ -38,6 +98,9 @@ document.querySelectorAll(".card").forEach((card) => {
       }
     } catch (err) {
       setIndicator(card, "error", { message: "Network error" });
+      showToast(`${provider} health check failed: network error`, true);
+    } finally {
+      setButtonLoading(button, false);
     }
   });
 });
@@ -228,6 +291,10 @@ const runnerOutput = document.getElementById("runner-output");
 const runnerText = document.getElementById("runner-text");
 const runnerCopy = document.getElementById("runner-copy");
 const runnerClear = document.getElementById("runner-clear");
+const runnerStream = document.getElementById("runner-stream");
+const runnerRateLimit = document.getElementById("runner-rate-limit");
+const runnerRateLimitBody = document.getElementById("runner-rate-limit-body");
+const runnerRateLimitToggle = document.getElementById("runner-rate-limit-toggle");
 
 function populateRunnerProviders() {
   const names = [...document.querySelectorAll(".card")]
@@ -310,6 +377,34 @@ function renderRunnerResult(data) {
   document.querySelector('[data-metric="latency_ms"]').textContent =
     formatMetric(data.latency_ms);
   runnerOutput.classList.remove("hidden");
+  renderRateLimits(data.rate_limit);
+}
+
+function renderRateLimits(rateLimit) {
+  if (!rateLimit || Object.keys(rateLimit).length === 0) {
+    runnerRateLimit.classList.add("hidden");
+    return;
+  }
+
+  runnerRateLimitBody.innerHTML = "";
+  Object.entries(rateLimit).forEach(([key, value]) => {
+    const field = document.createElement("div");
+    field.className = "runner-rate-limit-field";
+
+    const label = document.createElement("span");
+    label.className = "key";
+    label.textContent = key;
+
+    const val = document.createElement("span");
+    val.className = "value";
+    val.textContent = value;
+
+    field.append(label, val);
+    runnerRateLimitBody.appendChild(field);
+  });
+  runnerRateLimit.classList.remove("hidden");
+  runnerRateLimitBody.classList.remove("hidden");
+  runnerRateLimitToggle.textContent = "Hide";
 }
 
 async function runRequest() {
@@ -326,8 +421,13 @@ async function runRequest() {
   }
 
   setRunnerStatus("Running…");
-  runnerOutput.classList.add("hidden");
-  runnerRun.disabled = true;
+  runnerOutput.classList.remove("hidden");
+  runnerText.textContent = "";
+  runnerRateLimit.classList.add("hidden");
+  setMetric("prompt_tokens", "—");
+  setMetric("completion_tokens", "—");
+  setMetric("latency_ms", "—");
+  setButtonLoading(runnerRun, true);
 
   try {
     const route = isSearch
@@ -337,28 +437,89 @@ async function runRequest() {
       ? { query: value }
       : { model: runner.model, prompt: value };
 
-    const response = await fetch(route, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      let message = `HTTP ${response.status}`;
-      try {
-        const payload = await response.json();
-        message = payload.detail || message;
-      } catch (_) {}
-      throw new Error(message);
+    if (!isSearch && runnerStream.checked) {
+      await streamRequest(route + "/stream", body);
+    } else {
+      await plainRequest(route, body);
     }
-
-    const data = await response.json();
-    renderRunnerResult(data);
     setRunnerStatus("");
   } catch (err) {
     setRunnerStatus(err.message || "Request failed", true);
+    showToast(err.message || "Request failed", true);
   } finally {
-    runnerRun.disabled = false;
+    setButtonLoading(runnerRun, false);
+  }
+}
+
+async function plainRequest(route, body) {
+  const response = await fetch(route, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    let message = `HTTP ${response.status}`;
+    try {
+      const payload = await response.json();
+      message = payload.detail || message;
+    } catch (_) {}
+    throw new Error(message);
+  }
+
+  const data = await response.json();
+  renderRunnerResult(data);
+}
+
+async function streamRequest(route, body) {
+  const response = await fetch(route, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    let message = `HTTP ${response.status}`;
+    try {
+      const payload = await response.json();
+      message = payload.detail || message;
+    } catch (_) {}
+    throw new Error(message);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let boundary;
+    while ((boundary = buffer.indexOf("\n\n")) !== -1) {
+      const frame = buffer.slice(0, boundary);
+      buffer = buffer.slice(boundary + 2);
+      const line = frame.split("\n").find((l) => l.startsWith("data: "));
+      if (!line) continue;
+
+      let payload;
+      try {
+        payload = JSON.parse(line.slice(6));
+      } catch (_) {
+        continue;
+      }
+
+      if (payload.event === "delta") {
+        runnerText.textContent += payload.content || "";
+      } else if (payload.event === "done") {
+        setMetric("prompt_tokens", formatMetric(payload.prompt_tokens));
+        setMetric("completion_tokens", formatMetric(payload.completion_tokens));
+        setMetric("latency_ms", formatMetric(payload.latency_ms));
+      } else if (payload.event === "error") {
+        setRunnerStatus(payload.content || "Stream failed", true);
+      }
+    }
   }
 }
 
@@ -381,6 +542,18 @@ runnerRefresh.addEventListener("click", () => {
 });
 
 runnerRun.addEventListener("click", runRequest);
+
+runnerRateLimitToggle.addEventListener("click", () => {
+  const hidden = runnerRateLimitBody.classList.toggle("hidden");
+  runnerRateLimitToggle.textContent = hidden ? "Show" : "Hide";
+});
+
+runnerPrompt.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+    event.preventDefault();
+    runRequest();
+  }
+});
 
 function setMetric(key, value) {
   document.querySelector(`[data-metric="${key}"]`).textContent = value;
@@ -1115,7 +1288,7 @@ async function runComparison() {
   }
 
   setCompareStatus("Running…");
-  compareRun.disabled = true;
+  setButtonLoading(compareRun, true);
   compareResults.innerHTML = "";
 
   try {
@@ -1136,8 +1309,9 @@ async function runComparison() {
     setCompareStatus("");
   } catch (err) {
     setCompareStatus(err.message || "Comparison failed", true);
+    showToast(err.message || "Comparison failed", true);
   } finally {
-    compareRun.disabled = false;
+    setButtonLoading(compareRun, false);
   }
 }
 
@@ -1145,3 +1319,153 @@ compareAddTarget.addEventListener("click", createTargetRow);
 compareRun.addEventListener("click", runComparison);
 
 createTargetRow();
+
+const keysGrid = document.getElementById("keys-grid");
+const keysRefresh = document.getElementById("keys-refresh");
+
+function buildKeysCard(entry) {
+  const card = document.createElement("article");
+  card.className = "keys-card";
+
+  const title = document.createElement("h3");
+  title.textContent = entry.provider[0].toUpperCase() + entry.provider.slice(1);
+  card.appendChild(title);
+
+  const value = document.createElement("span");
+  value.className = "key-value";
+
+  if (entry.note) {
+    value.classList.add("missing");
+    value.textContent = entry.note;
+  } else if (entry.configured) {
+    value.textContent = entry.masked;
+  } else {
+    value.classList.add("missing");
+    value.textContent = "Not configured";
+  }
+
+  card.appendChild(value);
+  return card;
+}
+
+async function loadKeys() {
+  keysGrid.innerHTML = "";
+  try {
+    const response = await fetch("/api/keys");
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    (data.keys || []).forEach((entry) => keysGrid.appendChild(buildKeysCard(entry)));
+  } catch (err) {
+    showToast("Failed to load keys", true);
+  }
+}
+
+keysRefresh.addEventListener("click", loadKeys);
+loadKeys();
+
+const usageGroup = document.getElementById("usage-group");
+const usageChartCanvas = document.getElementById("usage-chart");
+const usageEmpty = document.getElementById("usage-empty");
+
+let usageChart = null;
+
+function chartColors() {
+  const styles = getComputedStyle(document.documentElement);
+  return {
+    text: styles.getPropertyValue("--text").trim() || "#1b2430",
+    muted: styles.getPropertyValue("--muted").trim() || "#63707f",
+  };
+}
+
+function renderUsageChart(points) {
+  if (usageChart) {
+    usageChart.destroy();
+    usageChart = null;
+  }
+
+  if (points.length === 0) {
+    usageEmpty.textContent = "No usage recorded yet — run a request to see the chart.";
+    usageEmpty.classList.remove("hidden");
+    usageChartCanvas.style.display = "none";
+    return;
+  }
+
+  if (typeof Chart === "undefined") {
+    usageEmpty.textContent = "Chart library not loaded — usage data unavailable.";
+    usageEmpty.classList.remove("hidden");
+    usageChartCanvas.style.display = "none";
+    return;
+  }
+
+  usageEmpty.classList.add("hidden");
+  usageChartCanvas.style.display = "";
+  const colors = chartColors();
+
+  usageChart = new Chart(usageChartCanvas, {
+    type: "line",
+    data: {
+      labels: points.map((p) => p.bucket),
+      datasets: [
+        {
+          label: "Tokens",
+          data: points.map((p) => p.tokens),
+          yAxisID: "y",
+          borderColor: "#2563eb",
+          backgroundColor: "rgba(37, 99, 235, 0.15)",
+          fill: true,
+          tension: 0.3,
+        },
+        {
+          label: "Spend ($)",
+          data: points.map((p) => p.cost),
+          yAxisID: "y1",
+          borderColor: "#22c55e",
+          backgroundColor: "rgba(34, 197, 94, 0.15)",
+          fill: true,
+          tension: 0.3,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: "Tokens", color: colors.muted },
+          ticks: { color: colors.muted },
+          grid: { color: "rgba(128, 128, 128, 0.15)" },
+        },
+        y1: {
+          beginAtZero: true,
+          position: "right",
+          title: { display: true, text: "Spend ($)", color: colors.muted },
+          ticks: { color: colors.muted },
+          grid: { drawOnChartArea: false },
+        },
+        x: {
+          ticks: { color: colors.muted },
+          grid: { color: "rgba(128, 128, 128, 0.15)" },
+        },
+      },
+      plugins: {
+        legend: { labels: { color: colors.text } },
+      },
+    },
+  });
+}
+
+async function loadUsage() {
+  try {
+    const response = await fetch(`/api/history/usage?group=${usageGroup.value}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    renderUsageChart(data.points || []);
+  } catch (err) {
+    showToast("Failed to load usage", true);
+  }
+}
+
+usageGroup.addEventListener("change", loadUsage);
+loadUsage();

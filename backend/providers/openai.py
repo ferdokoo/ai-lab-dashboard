@@ -11,12 +11,18 @@ booting (only calling ``request``).
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import Any, AsyncIterator
 
 import httpx
 
 from ..config import settings
-from .base import BaseProvider, ProviderError, model_entry, request_result
+from .base import (
+    BaseProvider,
+    ProviderError,
+    extract_rate_limits,
+    model_entry,
+    request_result,
+)
 
 _MODELS_URL = "https://api.openai.com/v1/models"
 
@@ -59,6 +65,21 @@ class OpenAIProvider(BaseProvider):
             prompt=prompt,
             options=options,
         )
+
+    async def stream(
+        self,
+        model: str,
+        prompt: str,
+        options: dict[str, Any] | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        async for event in chat_request_stream(
+            api_key=self.api_key,
+            name=self.name,
+            model=model,
+            prompt=prompt,
+            options=options,
+        ):
+            yield event
 
 
 async def chat_request(
@@ -119,7 +140,76 @@ async def chat_request(
         prompt_tokens=usage.prompt_tokens if usage else None,
         completion_tokens=usage.completion_tokens if usage else None,
         latency_ms=latency_ms,
+        rate_limit=extract_rate_limits(getattr(response, "headers", None)),
     )
+
+
+async def chat_request_stream(
+    api_key: str | None,
+    name: str,
+    model: str,
+    prompt: str,
+    options: dict[str, Any] | None = None,
+    base_url: str | None = None,
+    timeout: float = _DEFAULT_REQUEST_TIMEOUT,
+) -> AsyncIterator[dict[str, Any]]:
+    """Stream an OpenAI-compatible chat completion, yielding normalized events.
+
+    Shared streaming helper for OpenAI and OpenRouter.  Requests
+    ``stream_options.include_usage`` so the final chunk (which has no choices)
+    carries token usage.
+    """
+    if not api_key:
+        raise ProviderError(f"No {name} API key configured", status_code=401)
+
+    from openai import (
+        APIConnectionError,
+        APIError,
+        APITimeoutError,
+        AsyncOpenAI,
+    )
+
+    client_kwargs: dict[str, Any] = {
+        "api_key": api_key,
+        "timeout": timeout,
+        "max_retries": 0,
+    }
+    if base_url is not None:
+        client_kwargs["base_url"] = base_url
+    client = AsyncOpenAI(**client_kwargs)
+    options = dict(options or {})
+    options.setdefault("stream_options", {"include_usage": True})
+
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    try:
+        stream = await client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            stream=True,
+            **options,
+        )
+        async for chunk in stream:
+            usage = getattr(chunk, "usage", None)
+            if usage is not None:
+                prompt_tokens = usage.prompt_tokens
+                completion_tokens = usage.completion_tokens
+                continue
+            choices = chunk.choices or []
+            if not choices:
+                continue
+            delta = choices[0].delta
+            content = (delta.content if delta else None) or ""
+            if content:
+                yield {"type": "delta", "content": content}
+    except APITimeoutError as exc:
+        raise ProviderError("Request timed out", status_code=504) from exc
+    except APIConnectionError as exc:
+        raise ProviderError(f"Connection failed: {exc}", status_code=502) from exc
+    except APIError as exc:
+        raise api_error(exc) from exc
+
+    yield {"type": "done", "prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens}
 
 
 def api_error(exc: Any) -> ProviderError:

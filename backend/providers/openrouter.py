@@ -9,13 +9,13 @@ the OpenRouter endpoint.
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, AsyncIterator
 
 import httpx
 
 from ..config import settings
 from .base import BaseProvider, ProviderError, balance_result, model_entry
-from .openai import chat_request
+from .openai import chat_request, chat_request_stream
 
 _MODELS_URL = "https://openrouter.ai/api/v1/models"
 _REQUEST_BASE_URL = "https://openrouter.ai/api/v1"
@@ -72,6 +72,22 @@ class OpenRouterProvider(BaseProvider):
             options=options,
             base_url=_REQUEST_BASE_URL,
         )
+
+    async def stream(
+        self,
+        model: str,
+        prompt: str,
+        options: dict[str, Any] | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        async for event in chat_request_stream(
+            api_key=self.api_key,
+            name=self.name,
+            model=model,
+            prompt=prompt,
+            options=options,
+            base_url=_REQUEST_BASE_URL,
+        ):
+            yield event
 
     async def balance(self) -> dict[str, Any]:
         if not self.management_key:

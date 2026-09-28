@@ -12,10 +12,12 @@ counts and latency only (never prompt/response bodies).
 """
 from __future__ import annotations
 
+import json
 import time
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from .. import cost, requestlog
@@ -89,7 +91,90 @@ async def provider_request(provider: str, body: RequestBody) -> dict[str, Any]:
         "completion_tokens": completion_tokens,
         "latency_ms": result.get("latency_ms"),
         "estimated_cost_usd": cost_usd,
+        "rate_limit": result.get("rate_limit"),
     }
+
+
+@router.post("/{provider}/request/stream")
+async def provider_request_stream(provider: str, body: RequestBody) -> StreamingResponse:
+    """Stream a completion as Server-Sent Events.
+
+    Falls back to a single non-streamed response for providers that do not
+    implement streaming.  Each text delta is emitted as an ``delta`` event, and
+    a final ``done`` event carries token counts and latency.  Errors are emitted
+    as an ``error`` event so the client can surface them mid-stream.
+    """
+    name = _resolve_provider(provider)
+
+    if name in _SEARCH_ONLY:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{name.title()} is a search provider; use POST /api/{name}/search",
+        )
+
+    model = body.model.strip()
+    if not model:
+        raise HTTPException(status_code=400, detail="Model is required")
+    if not body.prompt.strip():
+        raise HTTPException(status_code=400, detail="Prompt cannot be empty")
+
+    impl = PROVIDERS[name]
+
+    async def event_stream():
+        started = time.perf_counter()
+        prompt_tokens: int | None = None
+        completion_tokens: int | None = None
+
+        try:
+            async for event in impl.stream(model, body.prompt, body.options):
+                event_type = event.get("type")
+                if event_type == "delta":
+                    yield _sse({"event": "delta", "content": event.get("content")})
+                elif event_type == "done":
+                    prompt_tokens = event.get("prompt_tokens")
+                    completion_tokens = event.get("completion_tokens")
+        except NotImplementedError:
+            result = await impl.request(model, body.prompt, body.options)
+            prompt_tokens = result.get("prompt_tokens")
+            completion_tokens = result.get("completion_tokens")
+            yield _sse({"event": "delta", "content": result.get("text") or ""})
+        except ProviderError as exc:
+            await _log_failure(name, model, started)
+            yield _sse({"event": "error", "content": exc.message})
+            return
+        except Exception as exc:  # noqa: BLE001 — surface any SDK/surprise error
+            message = str(exc) or exc.__class__.__name__
+            await _log_failure(name, model, started)
+            yield _sse({"event": "error", "content": message})
+            return
+
+        latency_ms = round((time.perf_counter() - started) * 1000)
+        cost_usd = await cost.estimate_cost(name, model, prompt_tokens, completion_tokens)
+        await requestlog.log_request(
+            provider=name,
+            model=model,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            estimated_cost_usd=cost_usd,
+            latency_ms=latency_ms,
+            kind=requestlog.KIND_TEXT,
+        )
+        yield _sse(
+            {
+                "event": "done",
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "latency_ms": latency_ms,
+                "estimated_cost_usd": cost_usd,
+            }
+        )
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+def _sse(payload: dict[str, Any]) -> str:
+    """Serialize a single Server-Sent Event ``data:`` frame."""
+    return f"data: {json.dumps(payload)}\n\n"
 
 
 @router.post("/{provider}/search")

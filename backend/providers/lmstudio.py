@@ -9,8 +9,9 @@ onto token counts.
 """
 from __future__ import annotations
 
+import json
 import time
-from typing import Any
+from typing import Any, AsyncIterator
 
 import httpx
 
@@ -86,6 +87,63 @@ class LMStudioProvider(BaseProvider):
             completion_tokens=usage.get("completion_tokens"),
             latency_ms=latency_ms,
         )
+
+    async def stream(
+        self,
+        model: str,
+        prompt: str,
+        options: dict[str, Any] | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        payload: dict[str, Any] = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": True,
+        }
+        payload.update(options or {})
+
+        prompt_tokens: int | None = None
+        completion_tokens: int | None = None
+        try:
+            async with httpx.AsyncClient(timeout=_GENERATE_TIMEOUT) as client:
+                async with client.stream(
+                    "POST", f"{self.base_url}/chat/completions", json=payload
+                ) as response:
+                    if response.status_code >= 300:
+                        if response.status_code == 404:
+                            raise ProviderError("Model not found", status_code=404)
+                        raise ProviderError(
+                            f"HTTP {response.status_code}", status_code=502
+                        )
+                    async for line in response.aiter_lines():
+                        if not line or not line.startswith("data:"):
+                            continue
+                        data_str = line[5:].strip()
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data_str)
+                        except json.JSONDecodeError:
+                            continue
+                        usage = chunk.get("usage")
+                        if usage:
+                            prompt_tokens = usage.get("prompt_tokens")
+                            completion_tokens = usage.get("completion_tokens")
+                        choices = chunk.get("choices") or []
+                        if choices and choices[0].get("delta", {}).get("content"):
+                            yield {
+                                "type": "delta",
+                                "content": choices[0]["delta"]["content"],
+                            }
+        except httpx.TimeoutException as exc:
+            raise ProviderError("Request timed out", status_code=504) from exc
+        except httpx.RequestError as exc:
+            raise ProviderError(f"Connection failed: {exc}", status_code=502) from exc
+
+        yield {
+            "type": "done",
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+        }
 
 
 provider = LMStudioProvider()
