@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-09-28
+- feat: Implement History Log feature with backend API, frontend UI, and CSV export functionality (049141e)
+- feat: Add plan, requirements, and validation for History Log feature (7663779)
+- Update changelog (c02e2b6)
 - feat: Implement Balance & Usage Panel with provider integration and UI (d2a6e4f)
 - feat: Add plan, requirements, and validation for Balance & Usage Panel (273b1ea)
 - Update changelog (6c5529e)
