@@ -38,5 +38,9 @@ class Settings:
     # Tavily
     tavily_api_key: str | None = os.getenv("TAVILY_API_KEY") or None
 
+    # Local inference (no key required)
+    ollama_base_url: str | None = os.getenv("OLLAMA_BASE_URL") or None
+    lmstudio_base_url: str | None = os.getenv("LMSTUDIO_BASE_URL") or None
+
 
 settings = Settings()

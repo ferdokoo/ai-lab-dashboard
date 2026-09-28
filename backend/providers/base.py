@@ -60,6 +60,14 @@ class BaseProvider:
     #: When ``False``, the router resolves top-model prices via Tavily search.
     supplies_pricing: bool = False
 
+    #: Whether the provider needs an API key to operate.  Local providers
+    #: (Ollama, LM Studio) set this ``False``.
+    requires_api_key: bool = True
+
+    #: Whether missing pricing should be resolved via Tavily search.  Local
+    #: providers set this ``False`` — their models have no public pricing.
+    resolve_pricing: bool = True
+
     @property
     def api_key(self) -> str | None:
         """Return the provider API key from config, or ``None`` if unset."""
@@ -77,7 +85,7 @@ class BaseProvider:
                                 otherwise ``None``
             * ``error``      -- human-readable message on failure, else ``None``
         """
-        if not self.api_key:
+        if self.requires_api_key and not self.api_key:
             return _result(STATUS_MISSING_KEY, None, "No API key configured")
 
         started = time.perf_counter()
@@ -86,6 +94,8 @@ class BaseProvider:
                 response = await self._probe(client)
         except httpx.TimeoutException:
             return _result(STATUS_TIMEOUT, None, "Request timed out")
+        except httpx.ConnectError as exc:
+            return _result(STATUS_ERROR, None, f"Connection failed: {exc}")
         except httpx.RequestError as exc:
             return _result(STATUS_ERROR, None, f"Request failed: {exc}")
 
@@ -118,13 +128,15 @@ class BaseProvider:
         Reuses ``_probe()`` for the actual request and converts failures into
         :class:`ProviderError` so the router can surface a clear HTTP response.
         """
-        if not self.api_key:
+        if self.requires_api_key and not self.api_key:
             raise ProviderError(f"No {self.name} API key configured", status_code=401)
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await self._probe(client)
         except httpx.TimeoutException:
             raise ProviderError("Request timed out") from None
+        except httpx.ConnectError as exc:
+            raise ProviderError(f"Connection failed: {exc}") from None
         except httpx.RequestError as exc:
             raise ProviderError(f"Request failed: {exc}") from None
         if response.status_code >= 300:

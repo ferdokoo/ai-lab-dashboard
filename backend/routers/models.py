@@ -37,7 +37,7 @@ async def provider_models(provider: str, refresh: bool = False) -> dict[str, Any
     except ProviderError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
 
-    if not impl.supplies_pricing:
+    if not impl.supplies_pricing and impl.resolve_pricing:
         models = await pricing.resolve_missing_pricing(name, models)
 
     await cache.set_catalog(name, models)

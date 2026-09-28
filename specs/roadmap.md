@@ -34,7 +34,7 @@ _Goal:_ Send a real prompt to any cloud model and see the full response, latency
 - Frontend: provider + model picker, prompt textarea, response panel showing output + usage metrics
 - Every call written to the SQLite request log (no prompt/response body stored by default)
 
-## Phase 5 — Local Inference (Ollama + LM Studio)
+## Phase 5 — Local Inference (Ollama + LM Studio) _complete_
 _Goal:_ Treat locally-running models as first-class providers alongside cloud APIs.
 - `backend/providers/ollama.py` — probes `localhost:11434`; implements `health()`, `models()`, `request()`
 - `backend/providers/lmstudio.py` — probes `localhost:1234` (OpenAI-compatible API); implements the same interface

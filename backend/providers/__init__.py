@@ -7,7 +7,7 @@ touching routing or frontend logic.
 """
 from __future__ import annotations
 
-from . import anthropic, gemini, openai, openrouter, tavily
+from . import anthropic, gemini, lmstudio, ollama, openai, openrouter, tavily
 from .base import BaseProvider
 
 PROVIDERS: dict[str, BaseProvider] = {
@@ -16,6 +16,8 @@ PROVIDERS: dict[str, BaseProvider] = {
     gemini.provider.name: gemini.provider,
     openrouter.provider.name: openrouter.provider,
     tavily.provider.name: tavily.provider,
+    ollama.provider.name: ollama.provider,
+    lmstudio.provider.name: lmstudio.provider,
 }
 
 __all__ = ["PROVIDERS"]
