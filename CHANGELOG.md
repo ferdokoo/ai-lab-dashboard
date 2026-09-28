@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-09-28
+- feat: add cost calculator and compare mode functionality (f999a0b)
+- feat: Add plan, requirements, and validation for Cost Tools & Compare Mode (0167889)
+- Update changelog (2977ac3)
 - feat: Implement History Log feature with backend API, frontend UI, and CSV export functionality (049141e)
 - feat: Add plan, requirements, and validation for History Log feature (7663779)
 - Update changelog (c02e2b6)

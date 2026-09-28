@@ -57,7 +57,7 @@ _Goal:_ Make every past test call browsable so patterns and costs are visible ov
 - Frontend: filterable + sortable table of past requests; cost and token columns
 - CSV export of filtered results
 
-## Phase 8 — Cost Tools & Compare Mode
+## Phase 8 — Cost Tools & Compare Mode _complete_
 _Goal:_ Estimate costs before running and compare model outputs side by side.
 - **Cost calculator**: input token counts, select provider + model, get $ estimate using cached pricing table
 - **Broadcast / compare mode**: one prompt sent to multiple provider+model pairs simultaneously; responses shown side by side with latency and cost per result
