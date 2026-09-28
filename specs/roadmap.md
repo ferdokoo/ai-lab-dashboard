@@ -42,7 +42,7 @@ _Goal:_ Treat locally-running models as first-class providers alongside cloud AP
 - Frontend: Ollama and LM Studio cards appear alongside cloud providers; greyed out gracefully when the local server isn't running
 - No API key required; connection failure is surfaced clearly
 
-## Phase 6 — Balance & Usage Panel
+## Phase 6 — Balance & Usage Panel _complete_
 _Goal:_ Show real credit/balance numbers where the API supports it; be honest where it doesn't.
 - Each provider implements `balance()` — returns real data or `None`
 - OpenRouter: requires management key (separate from inference key); documented in `.env.example`
