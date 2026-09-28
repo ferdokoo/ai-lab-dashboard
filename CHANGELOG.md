@@ -1,6 +1,12 @@
 # Changelog
 
+## 2026-09-28
+- feat: Implement local inference providers for Ollama and LM Studio with configuration and tests (4ecdc71)
+- feat: Add plans, requirements, and validation for local inference with Ollama and LM Studio (b222c93)
+
 ## 2026-09-24
+- docs: Update roadmap and prompts (fe1f49a)
+- Update changelog (f4b2764)
 - feat: Implement request runner functionality with backend tests and frontend UI (918623e)
 - Add initial plan, requirements, and validation for Request Runner feature (cf0f7cd)
 - Update changelog (c56a61a)
